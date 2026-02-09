@@ -425,11 +425,6 @@ export function DashboardPage() {
                   <label>Endereco</label>
                   <input type="text" placeholder="Rua, Numero - Bairro" className="input" />
                 </div>
-                <div className="form-group">
-                  <label>Black Cat API Key</label>
-                  <input type="password" placeholder="****************" className="input" />
-                  <small>Configure sua chave da API Black Cat Payments</small>
-                </div>
                 <button className="btn btn-primary">
                   <Save size={20} />
                   Salvar Configuracoes

@@ -1,6 +1,5 @@
 import { authService } from './supabase';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import { buildApiUrl } from './apiBase';
 
 export interface CheckoutPaymentInitResponse {
   success: boolean;
@@ -49,6 +48,19 @@ const ensureSessionToken = async () => {
   return token;
 };
 
+const fetchWithTimeout = async (input: RequestInfo | URL, init: RequestInit, timeoutMs = 15000) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 const parseApiError = async (response: Response, fallbackMessage: string) => {
   try {
     const payload = await response.json();
@@ -72,7 +84,7 @@ export const paymentService = {
     const token = await ensureSessionToken();
     const normalizedIdempotencyKey = idempotencyKey || `checkout-${orderId}`;
 
-    const response = await fetch(`${API_URL}/payment/checkout/initiate`, {
+    const response = await fetchWithTimeout(buildApiUrl('/payment/checkout/initiate'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -99,7 +111,7 @@ export const paymentService = {
   confirmPayment: async (paymentId: string): Promise<CheckoutPaymentConfirmResponse> => {
     const token = await ensureSessionToken();
 
-    const response = await fetch(`${API_URL}/payment/checkout/confirm`, {
+    const response = await fetchWithTimeout(buildApiUrl('/payment/checkout/confirm'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -119,7 +131,7 @@ export const paymentService = {
   getPaymentStatus: async (paymentId: string): Promise<CheckoutPaymentStatusResponse> => {
     const token = await ensureSessionToken();
 
-    const response = await fetch(`${API_URL}/payment/checkout/${encodeURIComponent(paymentId)}/status`, {
+    const response = await fetchWithTimeout(buildApiUrl(`/payment/checkout/${encodeURIComponent(paymentId)}/status`), {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -137,7 +149,7 @@ export const paymentService = {
   refund: async (paymentId: string, amount: number) => {
     const token = await ensureSessionToken();
 
-    const response = await fetch(`${API_URL}/payment/checkout/refund`, {
+    const response = await fetchWithTimeout(buildApiUrl('/payment/checkout/refund'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

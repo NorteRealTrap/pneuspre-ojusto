@@ -1,29 +1,29 @@
-# 🚀 Guia de Implantação - PneuStore
+﻿# ðŸš€ Guia de ImplantaÃ§Ã£o - PneuStore
 
-Este guia detalha como colocar sua loja de pneus em produção.
+Este guia detalha como colocar sua loja de pneus em produÃ§Ã£o.
 
 ---
 
-## 📋 Pré-requisitos
+## ðŸ“‹ PrÃ©-requisitos
 
 Antes de implantar, certifique-se de ter:
 
 - [x] Conta no Black Cat Payments configurada
-- [x] Domínio próprio (opcional, mas recomendado)
-- [x] Certificado SSL (HTTPS obrigatório para pagamentos)
-- [x] Servidor de hospedagem ou serviço de cloud
+- [x] DomÃ­nio prÃ³prio (opcional, mas recomendado)
+- [x] Certificado SSL (HTTPS obrigatÃ³rio para pagamentos)
+- [x] Servidor de hospedagem ou serviÃ§o de cloud
 
 ---
 
-## 🌐 Opções de Hospedagem
+## ðŸŒ OpÃ§Ãµes de Hospedagem
 
 ### 1. **Vercel** (Recomendado - Gratuito)
 
 **Vantagens:**
-- Deploy automático
+- Deploy automÃ¡tico
 - HTTPS gratuito
 - CDN global
-- Fácil configuração
+- FÃ¡cil configuraÃ§Ã£o
 
 **Passos:**
 
@@ -37,11 +37,11 @@ vercel login
 # 3. Deploy
 vercel
 
-# 4. Adicionar variáveis de ambiente
-vercel env add VITE_BLACKCAT_API_KEY production
+# 4. Adicionar variÃ¡veis de ambiente
+vercel env add PAYMENT_API_KEY production
 ```
 
-**Configurar domínio personalizado:**
+**Configurar domÃ­nio personalizado:**
 ```bash
 vercel domains add seu-dominio.com.br
 ```
@@ -61,7 +61,7 @@ npm run build
 # 4. Deploy
 netlify deploy --prod
 
-# 5. Configurar variáveis de ambiente no dashboard
+# 5. Configurar variÃ¡veis de ambiente no dashboard
 ```
 
 ### 3. **AWS S3 + CloudFront**
@@ -93,10 +93,10 @@ sudo apt-get install -y nodejs
 # 3. Instalar Nginx
 sudo apt-get install nginx
 
-# 4. Clonar repositório
+# 4. Clonar repositÃ³rio
 git clone seu-repositorio.git /var/www/pneustore
 
-# 5. Instalar dependências e build
+# 5. Instalar dependÃªncias e build
 cd /var/www/pneustore
 npm install
 npm run build
@@ -105,7 +105,7 @@ npm run build
 sudo nano /etc/nginx/sites-available/pneustore
 ```
 
-**Configuração do Nginx:**
+**ConfiguraÃ§Ã£o do Nginx:**
 ```nginx
 server {
     listen 80;
@@ -145,15 +145,15 @@ sudo certbot --nginx -d seu-dominio.com.br
 
 ---
 
-## 🔐 Configuração de Variáveis de Ambiente
+## ðŸ” ConfiguraÃ§Ã£o de VariÃ¡veis de Ambiente
 
-### Produção
+### ProduÃ§Ã£o
 
 Crie um arquivo `.env.production`:
 
 ```env
-# API Black Cat (PRODUÇÃO)
-VITE_BLACKCAT_API_KEY=sua_chave_de_producao_aqui
+# API Black Cat (PRODUÃ‡ÃƒO)
+PAYMENT_API_KEY=sua_chave_de_producao_aqui
 VITE_BLACKCAT_ENV=production
 
 # Dados da Loja
@@ -161,7 +161,7 @@ VITE_STORE_NAME=PneuStore
 VITE_STORE_CNPJ=12.345.678/0001-90
 VITE_STORE_PHONE=(11) 99999-9999
 VITE_STORE_EMAIL=contato@pneustore.com.br
-VITE_STORE_ADDRESS=Rua Exemplo, 123 - São Paulo, SP
+VITE_STORE_ADDRESS=Rua Exemplo, 123 - SÃ£o Paulo, SP
 
 # Redes Sociais
 VITE_WHATSAPP_NUMBER=5511999999999
@@ -172,14 +172,14 @@ VITE_FACEBOOK_PAGE=pneustore
 VITE_GA_TRACKING_ID=UA-XXXXXXXXX-X
 ```
 
-⚠️ **IMPORTANTE:**
+âš ï¸ **IMPORTANTE:**
 - **NUNCA** comite o arquivo `.env` no Git
-- Use as variáveis de ambiente do serviço de hospedagem
+- Use as variÃ¡veis de ambiente do serviÃ§o de hospedagem
 - Mantenha a API Key segura
 
 ---
 
-## 🔧 Otimizações para Produção
+## ðŸ”§ OtimizaÃ§Ãµes para ProduÃ§Ã£o
 
 ### 1. Adicionar Google Analytics
 
@@ -207,8 +207,8 @@ Edite `index.html`:
 ```html
 <head>
   <!-- SEO -->
-  <title>PneuStore - Pneus de Qualidade com os Melhores Preços</title>
-  <meta name="description" content="Encontre os melhores pneus para seu veículo. Entrega rápida, parcelamento em 12x sem juros e as melhores marcas do mercado.">
+  <title>PneuStore - Pneus de Qualidade com os Melhores PreÃ§os</title>
+  <meta name="description" content="Encontre os melhores pneus para seu veÃ­culo. Entrega rÃ¡pida, parcelamento em 12x sem juros e as melhores marcas do mercado.">
   <meta name="keywords" content="pneus, pneus baratos, pneus online, comprar pneus, goodyear, michelin, pirelli">
   
   <!-- Open Graph -->
@@ -220,7 +220,7 @@ Edite `index.html`:
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="PneuStore">
-  <meta name="twitter:description" content="Pneus de qualidade com os melhores preços">
+  <meta name="twitter:description" content="Pneus de qualidade com os melhores preÃ§os">
 </head>
 ```
 
@@ -254,7 +254,7 @@ Sitemap: https://seu-dominio.com.br/sitemap.xml
 
 ---
 
-## 📊 Monitoramento
+## ðŸ“Š Monitoramento
 
 ### 1. Google Search Console
 
@@ -265,7 +265,7 @@ Sitemap: https://seu-dominio.com.br/sitemap.xml
 
 ### 2. Black Cat Dashboard
 
-Monitore suas transações em:
+Monitore suas transaÃ§Ãµes em:
 - https://painel.blackcatpagamentos.online/
 
 ### 3. Logs de Erro
@@ -287,25 +287,25 @@ Sentry.init({
 
 ---
 
-## 🔒 Checklist de Segurança
+## ðŸ”’ Checklist de SeguranÃ§a
 
-Antes de ir para produção:
+Antes de ir para produÃ§Ã£o:
 
 - [ ] HTTPS configurado
-- [ ] API Keys em variáveis de ambiente
+- [ ] API Keys em variÃ¡veis de ambiente
 - [ ] CORS configurado corretamente
-- [ ] Validações client-side e server-side
-- [ ] Proteção contra SQL Injection
-- [ ] Proteção contra XSS
+- [ ] ValidaÃ§Ãµes client-side e server-side
+- [ ] ProteÃ§Ã£o contra SQL Injection
+- [ ] ProteÃ§Ã£o contra XSS
 - [ ] Rate limiting configurado
 - [ ] Logs de auditoria ativos
-- [ ] Backups automáticos configurados
-- [ ] Política de privacidade criada
+- [ ] Backups automÃ¡ticos configurados
+- [ ] PolÃ­tica de privacidade criada
 - [ ] Termos de uso criados
 
 ---
 
-## 📱 PWA (Progressive Web App) - Opcional
+## ðŸ“± PWA (Progressive Web App) - Opcional
 
 ### 1. Instalar Vite PWA Plugin
 
@@ -350,7 +350,7 @@ export default defineConfig({
 
 ---
 
-## 🚀 Deploy Automático com GitHub Actions
+## ðŸš€ Deploy AutomÃ¡tico com GitHub Actions
 
 Crie `.github/workflows/deploy.yml`:
 
@@ -379,7 +379,7 @@ jobs:
     - name: Build
       run: npm run build
       env:
-        VITE_BLACKCAT_API_KEY: ${{ secrets.BLACKCAT_API_KEY }}
+        PAYMENT_API_KEY: ${{ secrets.BLACKCAT_API_KEY }}
         
     - name: Deploy to Vercel
       uses: amondnet/vercel-action@v20
@@ -392,7 +392,7 @@ jobs:
 
 ---
 
-## 📈 Performance
+## ðŸ“ˆ Performance
 
 ### Metas de Performance
 
@@ -408,20 +408,20 @@ jobs:
 
 ---
 
-## 🐛 Troubleshooting em Produção
+## ðŸ› Troubleshooting em ProduÃ§Ã£o
 
-### Problema: Variáveis de ambiente não funcionam
+### Problema: VariÃ¡veis de ambiente nÃ£o funcionam
 
-**Solução:**
+**SoluÃ§Ã£o:**
 ```bash
-# Verificar se as variáveis foram definidas
+# Verificar se as variÃ¡veis foram definidas
 npm run build
 # Procurar por "undefined" nos logs
 ```
 
-### Problema: Erro 404 ao recarregar página
+### Problema: Erro 404 ao recarregar pÃ¡gina
 
-**Solução:**
+**SoluÃ§Ã£o:**
 Configure rewrite rules no servidor:
 
 **Vercel** - `vercel.json`:
@@ -436,17 +436,17 @@ Configure rewrite rules no servidor:
 /*    /index.html   200
 ```
 
-### Problema: Pagamento não processa
+### Problema: Pagamento nÃ£o processa
 
 **Checklist:**
-1. API Key está correta?
-2. Ambiente está configurado (production/sandbox)?
-3. HTTPS está ativo?
-4. CORS está configurado?
+1. API Key estÃ¡ correta?
+2. Ambiente estÃ¡ configurado (production/sandbox)?
+3. HTTPS estÃ¡ ativo?
+4. CORS estÃ¡ configurado?
 
 ---
 
-## 📞 Suporte
+## ðŸ“ž Suporte
 
 ### Black Cat Payments
 - **Email**: suporte@blackcatpagamentos.online
@@ -460,34 +460,35 @@ Configure rewrite rules no servidor:
 
 ---
 
-## ✅ Checklist Final
+## âœ… Checklist Final
 
-Antes de lançar:
+Antes de lanÃ§ar:
 
-- [ ] Build de produção testado localmente
-- [ ] Variáveis de ambiente configuradas
+- [ ] Build de produÃ§Ã£o testado localmente
+- [ ] VariÃ¡veis de ambiente configuradas
 - [ ] HTTPS funcionando
 - [ ] Pagamentos testados em sandbox
-- [ ] Pagamentos testados em produção
+- [ ] Pagamentos testados em produÃ§Ã£o
 - [ ] SEO configurado
 - [ ] Analytics configurado
 - [ ] Monitoramento ativo
 - [ ] Backups configurados
-- [ ] Documentação atualizada
+- [ ] DocumentaÃ§Ã£o atualizada
 - [ ] Equipe treinada
 - [ ] Suporte pronto
 
 ---
 
-## 🎉 Parabéns!
+## ðŸŽ‰ ParabÃ©ns!
 
-Sua loja está pronta para vender! 🚀
+Sua loja estÃ¡ pronta para vender! ðŸš€
 
-**Primeiros passos após o deploy:**
+**Primeiros passos apÃ³s o deploy:**
 
 1. Teste uma compra real
-2. Verifique os emails de confirmação
-3. Monitore as primeiras transações
-4. Ajuste conforme necessário
+2. Verifique os emails de confirmaÃ§Ã£o
+3. Monitore as primeiras transaÃ§Ãµes
+4. Ajuste conforme necessÃ¡rio
 
-**Boa sorte com suas vendas! 💰**
+**Boa sorte com suas vendas! ðŸ’°**
+

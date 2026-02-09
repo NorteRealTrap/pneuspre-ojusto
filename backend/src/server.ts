@@ -9,6 +9,7 @@ dotenv.config();
 
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', true);
 
 type PaymentMethod = 'credit_card' | 'pix' | 'boleto';
 type InternalPaymentStatus =
@@ -43,6 +44,28 @@ interface SupabaseOrderRecord {
   status: string;
   payment_method: PaymentMethod;
   payment_id?: string | null;
+}
+
+interface SupabaseOrderItemRecord {
+  product_id: string;
+  quantity: number | string;
+}
+
+interface SupabaseProductRecord {
+  id: string;
+  price: number | string;
+}
+
+interface RateLimitBucket {
+  count: number;
+  resetAt: number;
+}
+
+interface RateLimitConfig {
+  keyPrefix: string;
+  windowMs: number;
+  maxRequests: number;
+  message: string;
 }
 
 const normalizeEnv = (value?: string) => (value || '').trim();
@@ -86,6 +109,7 @@ const paymentIntents = new Map<string, PaymentIntent>();
 const paymentByOrderAndKey = new Map<string, string>();
 const PAYMENT_INTENT_TTL_MS = 30 * 60 * 1000;
 const MAX_CONFIRM_ATTEMPTS = 5;
+const rateLimitBuckets = new Map<string, RateLimitBucket>();
 
 if (!supabaseUrl || !supabaseAuthKey) {
   console.warn(
@@ -94,11 +118,105 @@ if (!supabaseUrl || !supabaseAuthKey) {
   );
 }
 
+const getClientIp = (req: Request): string => {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
+    const [firstIp] = forwardedFor.split(',');
+    return firstIp.trim();
+  }
+
+  if (Array.isArray(forwardedFor) && forwardedFor.length > 0) {
+    return String(forwardedFor[0]).trim();
+  }
+
+  return req.ip || req.socket.remoteAddress || 'unknown';
+};
+
+const createRateLimit = (config: RateLimitConfig) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const now = Date.now();
+    const bucketKey = `${config.keyPrefix}:${getClientIp(req)}`;
+    const currentBucket = rateLimitBuckets.get(bucketKey);
+
+    if (!currentBucket || currentBucket.resetAt <= now) {
+      rateLimitBuckets.set(bucketKey, {
+        count: 1,
+        resetAt: now + config.windowMs,
+      });
+      return next();
+    }
+
+    if (currentBucket.count >= config.maxRequests) {
+      const retryAfter = Math.max(1, Math.ceil((currentBucket.resetAt - now) / 1000));
+      res.setHeader('Retry-After', String(retryAfter));
+      return res.status(429).json({ error: config.message });
+    }
+
+    currentBucket.count += 1;
+    rateLimitBuckets.set(bucketKey, currentBucket);
+    return next();
+  };
+};
+
+const paymentInitiateRateLimit = createRateLimit({
+  keyPrefix: 'payment-initiate',
+  windowMs: 60 * 1000,
+  maxRequests: 20,
+  message: 'Muitas tentativas para iniciar pagamento. Aguarde alguns segundos.',
+});
+
+const paymentConfirmRateLimit = createRateLimit({
+  keyPrefix: 'payment-confirm',
+  windowMs: 60 * 1000,
+  maxRequests: 30,
+  message: 'Muitas confirmacoes em sequencia. Tente novamente em instantes.',
+});
+
+const paymentStatusRateLimit = createRateLimit({
+  keyPrefix: 'payment-status',
+  windowMs: 60 * 1000,
+  maxRequests: 80,
+  message: 'Limite de consultas de status excedido temporariamente.',
+});
+
+const paymentRefundRateLimit = createRateLimit({
+  keyPrefix: 'payment-refund',
+  windowMs: 60 * 1000,
+  maxRequests: 12,
+  message: 'Limite de solicitacoes de reembolso excedido temporariamente.',
+});
+
+const webhookRateLimit = createRateLimit({
+  keyPrefix: 'payment-webhook',
+  windowMs: 60 * 1000,
+  maxRequests: 120,
+  message: 'Limite de webhook excedido temporariamente.',
+});
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [bucketKey, bucket] of rateLimitBuckets.entries()) {
+    if (bucket.resetAt <= now) {
+      rateLimitBuckets.delete(bucketKey);
+    }
+  }
+}, 60 * 1000).unref();
+
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'no-store');
+  }
+
+  if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+
   next();
 });
 
@@ -113,7 +231,13 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'X-Signature'],
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'X-Signature',
+      'Idempotency-Key',
+      'X-Idempotency-Key',
+    ],
     maxAge: 86400,
   })
 );
@@ -198,7 +322,10 @@ const paymentStatusToOrderStatus = (
   status: InternalPaymentStatus
 ): 'pending' | 'processing' | 'cancelled' => {
   if (status === 'cancelled' || status === 'declined' || status === 'refunded') return 'cancelled';
-  if (paymentMethod === 'credit_card' && (status === 'processing' || status === 'confirmed' || status === 'approved')) {
+  if (status === 'confirmed' || status === 'approved') {
+    return 'processing';
+  }
+  if (paymentMethod === 'credit_card' && status === 'processing') {
     return 'processing';
   }
   return 'pending';
@@ -270,10 +397,87 @@ const getSupabaseOrderByPaymentId = async (
   return rows[0] || null;
 };
 
+const getSupabaseOrderItems = async (
+  config: { url: string; key: string },
+  orderId: string
+): Promise<SupabaseOrderItemRecord[]> => {
+  const query = `order_id=eq.${encodeURIComponent(orderId)}&select=product_id,quantity`;
+  const response = await fetch(`${config.url}/rest/v1/order_items?${query}`, {
+    method: 'GET',
+    headers: buildSupabaseHeaders(config.key),
+  });
+
+  if (!response.ok) {
+    throw new Error('Falha ao consultar itens do pedido no Supabase');
+  }
+
+  return (await response.json()) as SupabaseOrderItemRecord[];
+};
+
+const getSupabaseProductsByIds = async (
+  config: { url: string; key: string },
+  productIds: string[]
+): Promise<SupabaseProductRecord[]> => {
+  if (productIds.length === 0) {
+    return [];
+  }
+
+  const joinedIds = productIds.map((id) => `"${id}"`).join(',');
+  const query = `id=in.(${encodeURIComponent(joinedIds)})&select=id,price`;
+
+  const response = await fetch(`${config.url}/rest/v1/products?${query}`, {
+    method: 'GET',
+    headers: buildSupabaseHeaders(config.key),
+  });
+
+  if (!response.ok) {
+    throw new Error('Falha ao consultar produtos do pedido no Supabase');
+  }
+
+  return (await response.json()) as SupabaseProductRecord[];
+};
+
+const calculateOrderTotalFromCatalog = async (
+  config: { url: string; key: string },
+  orderId: string
+): Promise<number | null> => {
+  const orderItems = await getSupabaseOrderItems(config, orderId);
+  if (orderItems.length === 0) {
+    return null;
+  }
+
+  const productIds = Array.from(
+    new Set(
+      orderItems
+        .map((item) => String(item.product_id || '').trim())
+        .filter((productId) => uuidRegex.test(productId))
+    )
+  );
+
+  if (productIds.length === 0) {
+    return null;
+  }
+
+  const products = await getSupabaseProductsByIds(config, productIds);
+  const priceByProductId = new Map(products.map((product) => [product.id, parseDatabaseAmount(product.price)]));
+
+  let total = 0;
+  for (const item of orderItems) {
+    const productId = String(item.product_id || '').trim();
+    const quantity = Number(item.quantity);
+    if (!priceByProductId.has(productId) || !Number.isFinite(quantity) || quantity <= 0) {
+      return null;
+    }
+    total += priceByProductId.get(productId)! * quantity;
+  }
+
+  return Math.round(total * 100) / 100;
+};
+
 const updateSupabaseOrder = async (
   config: { url: string; key: string },
   orderId: string,
-  updates: Partial<Pick<SupabaseOrderRecord, 'status' | 'payment_method' | 'payment_id'>>
+  updates: Partial<Pick<SupabaseOrderRecord, 'status' | 'payment_method' | 'payment_id' | 'total'>>
 ) => {
   const response = await fetch(`${config.url}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}`, {
     method: 'PATCH',
@@ -296,7 +500,7 @@ const safeTimingEqual = (provided: string, expected: string) => {
   return crypto.timingSafeEqual(providedBuffer, expectedBuffer);
 };
 
-app.post('/api/payment/webhook', express.raw({ type: 'application/json', limit: '100kb' }), async (req: Request, res: Response) => {
+app.post('/api/payment/webhook', webhookRateLimit, express.raw({ type: 'application/json', limit: '100kb' }), async (req: Request, res: Response) => {
   try {
     const webhookSecret = normalizeEnv(process.env.PAYMENT_WEBHOOK_SECRET);
     if (!hasConfiguredSecret(webhookSecret)) {
@@ -463,8 +667,20 @@ const initiateCheckoutPayment = async (req: AuthenticatedRequest, res: Response)
       return res.status(409).json({ error: 'Metodo de pagamento divergente do pedido' });
     }
 
-    if (!amountMatchesOrder(amount, order.total)) {
-      return res.status(409).json({ error: 'Valor de pagamento divergente do total do pedido' });
+    const expectedOrderTotal = await calculateOrderTotalFromCatalog(supabaseAdmin, orderId);
+    if (expectedOrderTotal === null) {
+      return res.status(409).json({ error: 'Nao foi possivel validar os itens do pedido para pagamento' });
+    }
+
+    if (!amountMatchesOrder(amount, expectedOrderTotal)) {
+      return res.status(409).json({ error: 'Valor de pagamento divergente do total validado do pedido' });
+    }
+
+    if (!amountMatchesOrder(parseDatabaseAmount(order.total), expectedOrderTotal)) {
+      const updatedOrder = await updateSupabaseOrder(supabaseAdmin, orderId, { total: expectedOrderTotal });
+      if (updatedOrder) {
+        order.total = updatedOrder.total;
+      }
     }
 
     if (['cancelled', 'delivered'].includes(order.status)) {
@@ -766,15 +982,23 @@ app.get('/api/public/login-banner', (req: Request, res: Response) => {
   return res.json({ bannerImage: fallbackBannerUrl });
 });
 
-app.post('/api/payment/checkout/initiate', authenticate, initiateCheckoutPayment);
-app.post('/api/payment/checkout/confirm', authenticate, confirmCheckoutPayment);
-app.get('/api/payment/checkout/:paymentId/status', authenticate, getCheckoutPaymentStatus);
-app.post('/api/payment/checkout/refund', authenticate, refundCheckoutPayment);
+app.get('/api/health', (_req: Request, res: Response) => {
+  return res.status(200).json({ ok: true, service: 'payment-backend' });
+});
+
+app.post('/api/payment/checkout/initiate', paymentInitiateRateLimit, authenticate, initiateCheckoutPayment);
+app.post('/api/payment/checkout/confirm', paymentConfirmRateLimit, authenticate, confirmCheckoutPayment);
+app.get('/api/payment/checkout/:paymentId/status', paymentStatusRateLimit, authenticate, getCheckoutPaymentStatus);
+app.post('/api/payment/checkout/refund', paymentRefundRateLimit, authenticate, refundCheckoutPayment);
 
 // Rotas legadas mantidas para compatibilidade com clientes antigos
-app.post('/api/payment/charge', authenticate, initiateCheckoutPayment);
-app.post('/api/payment/confirm', authenticate, confirmCheckoutPayment);
-app.post('/api/payment/refund', authenticate, refundCheckoutPayment);
+app.post('/api/payment/charge', paymentInitiateRateLimit, authenticate, initiateCheckoutPayment);
+app.post('/api/payment/confirm', paymentConfirmRateLimit, authenticate, confirmCheckoutPayment);
+app.post('/api/payment/refund', paymentRefundRateLimit, authenticate, refundCheckoutPayment);
+
+app.use('/api', (_req: Request, res: Response) => {
+  return res.status(404).json({ error: 'Rota de API nao encontrada' });
+});
 
 app.use((error: Error, req: Request, res: Response, _next: NextFunction) => {
   if (error.message === 'CORS origin not allowed') {

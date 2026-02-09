@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useCartStore } from '../stores/cart';
 import { useAuthStore } from '../stores/auth';
 import { useNotificationsStore } from '../stores/notifications';
@@ -6,121 +6,43 @@ import { useNavigate } from 'react-router-dom';
 import { ordersService } from '../../services/supabase';
 import { paymentService } from '../../services/paymentService';
 import {
-  ArrowRight,
-  CheckCircle2,
-  Clock3,
   CreditCard,
   Landmark,
-  Lock,
   MapPin,
   ShieldCheck,
-  Sparkles,
   Truck,
   Wallet,
+  ArrowLeft,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const acceptedConfirmationStatuses = new Set(['confirmed', 'approved', 'pending', 'processing']);
-const approvedPaymentStatuses = new Set(['confirmed', 'approved']);
-
 const paymentOptions = [
   {
     value: 'credit_card',
-    label: 'Cartao de credito',
-    description: 'Confirmacao imediata apos validacao',
+    label: 'Cartão de crédito',
+    description: 'Até 12x sem juros',
     icon: CreditCard,
-    highlight: 'Mais rapido',
   },
   {
     value: 'pix',
     label: 'PIX',
-    description: 'Pagamento instantaneo com chave dinamica',
+    description: 'Confirmação rápida',
     icon: Wallet,
-    highlight: 'Sem taxa',
   },
   {
     value: 'boleto',
-    label: 'Boleto bancario',
-    description: 'Compensacao conforme horario bancario',
+    label: 'Boleto bancário',
+    description: 'Vencimento conforme emissão',
     icon: Landmark,
-    highlight: 'Flexivel',
   },
 ] as const;
 
 type PaymentMethodValue = (typeof paymentOptions)[number]['value'];
-
-type CheckoutAddressForm = {
-  street: string;
-  number: string;
-  complement: string;
-  city: string;
-  state: string;
-  zipcode: string;
-};
-
-const initialFormData: CheckoutAddressForm = {
-  street: '',
-  number: '',
-  complement: '',
-  city: '',
-  state: '',
-  zipcode: '',
-};
-
-const paymentMethodLabels: Record<PaymentMethodValue, string> = {
-  credit_card: 'Cartao de credito',
-  pix: 'PIX',
-  boleto: 'Boleto bancario',
-};
-
-const addressFields: Array<{
-  name: keyof CheckoutAddressForm;
-  label: string;
-  placeholder: string;
-  autoComplete: string;
-  colSpan?: string;
-}> = [
-  {
-    name: 'street',
-    label: 'Rua',
-    placeholder: 'Ex.: Avenida Paulista',
-    autoComplete: 'address-line1',
-    colSpan: 'md:col-span-2',
-  },
-  {
-    name: 'number',
-    label: 'Numero',
-    placeholder: 'Ex.: 1500',
-    autoComplete: 'address-line2',
-  },
-  {
-    name: 'complement',
-    label: 'Complemento',
-    placeholder: 'Ex.: Bloco B, apto 45 (opcional)',
-    autoComplete: 'address-line2',
-  },
-  {
-    name: 'city',
-    label: 'Cidade',
-    placeholder: 'Ex.: Sao Paulo',
-    autoComplete: 'address-level2',
-  },
-  {
-    name: 'state',
-    label: 'Estado',
-    placeholder: 'Ex.: SP',
-    autoComplete: 'address-level1',
-  },
-  {
-    name: 'zipcode',
-    label: 'CEP',
-    placeholder: 'Ex.: 01310-100',
-    autoComplete: 'postal-code',
-    colSpan: 'md:col-span-2',
-  },
-];
 
 const formatCurrency = (value: number) =>
   value.toLocaleString('pt-BR', {
@@ -128,35 +50,35 @@ const formatCurrency = (value: number) =>
     currency: 'BRL',
   });
 
-const normalizePaymentStatus = (status?: string | null) => (status || '').trim().toLowerCase();
-
-const sectionCardClass =
-  'rounded-3xl border border-black/10 bg-white/90 p-6 md:p-7 shadow-[0_18px_36px_rgba(15,23,42,0.08)] backdrop-blur-sm';
+const panelClass =
+  'rounded-3xl border-2 border-black bg-white p-8 md:p-10 shadow-[0_14px_36px_rgba(0,0,0,0.08)] transition duration-300 hover:shadow-[0_20px_48px_rgba(0,0,0,0.12)]';
 
 const inputClass =
-  'h-12 w-full rounded-xl border border-black/15 bg-white px-4 text-sm font-semibold text-gray-900 placeholder:text-gray-400 transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100';
+  'h-12 w-full rounded-2xl border-2 border-black/15 bg-white px-4 text-sm text-gray-900 placeholder:text-gray-500 transition-all duration-200 focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-200 font-medium';
 
 export function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCartStore();
   const { user } = useAuthStore();
   const notifyPurchaseCompleted = useNotificationsStore((state) => state.notifyPurchaseCompleted);
-  const notifyPaymentApproved = useNotificationsStore((state) => state.notifyPaymentApproved);
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>('credit_card');
-  const [formData, setFormData] = useState<CheckoutAddressForm>(initialFormData);
+  const [formData, setFormData] = useState({
+    street: '',
+    number: '',
+    complement: '',
+    city: '',
+    state: '',
+    zipcode: '',
+  });
 
   const subtotal = getTotalPrice();
   const totalItems = items.reduce((total, item) => total + item.quantity, 0);
+  const selectedPaymentOption = paymentOptions.find((opt) => opt.value === paymentMethod)!;
 
-  const selectedPaymentOption = useMemo(
-    () => paymentOptions.find((option) => option.value === paymentMethod) || paymentOptions[0],
-    [paymentMethod]
-  );
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -169,7 +91,7 @@ export function CheckoutPage() {
 
     try {
       if (!user) {
-        throw new Error('Usuario nao autenticado');
+        throw new Error('Usuário não autenticado');
       }
 
       if (items.length === 0) {
@@ -178,7 +100,7 @@ export function CheckoutPage() {
 
       const hasInvalidProductId = items.some((item) => !uuidRegex.test(item.product.id));
       if (hasInvalidProductId) {
-        throw new Error('Carrinho contem produtos antigos. Remova os itens e adicione novamente.');
+        throw new Error('Carrinho contém produtos antigos. Remova os itens e adicione novamente.');
       }
 
       const orderData = {
@@ -199,7 +121,7 @@ export function CheckoutPage() {
 
       createdOrderId = createdOrder?.id || null;
       if (!createdOrderId || !uuidRegex.test(createdOrderId)) {
-        throw new Error('Pedido criado com identificador invalido');
+        throw new Error('Pedido criado com identificador inválido');
       }
 
       const initiatedPayment = await paymentService.createCharge(
@@ -210,32 +132,17 @@ export function CheckoutPage() {
       );
 
       if (!initiatedPayment?.paymentId) {
-        throw new Error('Nao foi possivel iniciar a confirmacao de pagamento');
+        throw new Error('Não foi possível iniciar a confirmação de pagamento');
       }
 
       const paymentConfirmation = await paymentService.confirmPayment(initiatedPayment.paymentId);
       if (!paymentConfirmation?.success) {
-        throw new Error('Nao foi possivel confirmar o pagamento');
+        throw new Error('Não foi possível confirmar o pagamento');
       }
 
-      let finalPaymentStatus = normalizePaymentStatus(paymentConfirmation.status);
-
-      if (!acceptedConfirmationStatuses.has(finalPaymentStatus)) {
-        throw new Error('Pagamento nao confirmado. Tente novamente.');
-      }
-
-      try {
-        const paymentSnapshot = await paymentService.getPaymentStatus(initiatedPayment.paymentId);
-        const snapshotStatus = normalizePaymentStatus(paymentSnapshot?.status);
-        if (snapshotStatus) {
-          finalPaymentStatus = snapshotStatus;
-        }
-      } catch (_snapshotError) {
-        // Mantem o status retornado na confirmacao.
-      }
-
-      if (approvedPaymentStatuses.has(finalPaymentStatus)) {
-        notifyPaymentApproved(createdOrderId, paymentMethodLabels[paymentMethod]);
+      const validConfirmationStatuses = new Set(['confirmed', 'approved', 'pending', 'processing']);
+      if (!validConfirmationStatuses.has((paymentConfirmation.status || '').toLowerCase())) {
+        throw new Error('Pagamento não confirmado. Tente novamente.');
       }
 
       clearCart();
@@ -246,7 +153,7 @@ export function CheckoutPage() {
         try {
           await ordersService.updateStatus(createdOrderId, 'cancelled');
         } catch (_cancelError) {
-          // Nao interrompe o tratamento principal de erro.
+          // Não interrompe o tratamento principal de erro
         }
       }
       setError(err.message || 'Erro ao processar pedido');
@@ -257,19 +164,22 @@ export function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-10 md:py-12">
-        <div className="mx-auto max-w-2xl rounded-3xl border border-black/15 bg-white p-8 text-center shadow-[0_20px_42px_rgba(15,23,42,0.10)]">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-            <Wallet size={28} />
+      <div className="min-h-[70vh] bg-gradient-to-b from-gray-50 to-white flex items-center justify-center px-4 py-16">
+        <div className={`${panelClass} max-w-2xl w-full text-center`}>
+          <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-amber-100">
+            <Wallet size={40} className="text-amber-700" />
           </div>
-          <h1 className="mb-3 text-2xl font-black text-gray-900 md:text-3xl">Checkout indisponivel</h1>
-          <p className="mb-7 text-gray-600">Seu carrinho esta vazio no momento.</p>
+          <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">Checkout indisponível</h1>
+          <p className="text-gray-600 mb-10 text-lg leading-relaxed">
+            Seu carrinho está vazio. Adicione alguns pneus de qualidade para começar sua compra.
+          </p>
           <button
             onClick={() => navigate('/products')}
-            className="rounded-2xl border-2 border-black px-6 py-3 font-black text-black transition hover:-translate-y-0.5"
+            className="inline-flex items-center justify-center gap-3 rounded-2xl border-2 border-black px-8 py-4 font-black text-black transition-all duration-200 hover:-translate-y-1 hover:shadow-xl active:translate-y-0 cursor-pointer text-base"
             style={{ background: 'var(--primary-yellow)' }}
           >
-            Voltar ao catalogo
+            <ArrowLeft size={20} />
+            <span>Volta ao Catálogo</span>
           </button>
         </div>
       </div>
@@ -277,91 +187,162 @@ export function CheckoutPage() {
   }
 
   return (
-    <div className="relative overflow-hidden bg-[radial-gradient(circle_at_0%_0%,#fef3c7_0%,transparent_45%),radial-gradient(circle_at_95%_10%,#d1fae5_0%,transparent_40%),linear-gradient(180deg,#f8fafc_0%,#f0fdf4_52%,#fffbeb_100%)]">
-      <div className="pointer-events-none absolute -left-20 top-24 h-64 w-64 rounded-full bg-yellow-200/45 blur-3xl" />
-      <div className="pointer-events-none absolute -right-12 top-10 h-72 w-72 rounded-full bg-emerald-200/45 blur-3xl" />
-
-      <div className="container relative z-10 mx-auto px-4 py-10 md:py-12">
-        <section className="relative overflow-hidden rounded-[28px] border-2 border-black bg-[linear-gradient(130deg,#0f172a_0%,#14532d_52%,#047857_100%)] px-6 py-7 text-white shadow-[0_26px_55px_rgba(0,0,0,0.28)] md:px-8 md:py-9">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-yellow-300/30 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-14 left-8 h-40 w-40 rounded-full bg-emerald-300/30 blur-3xl" />
-
-          <div className="relative z-10 flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em]">
-              <Sparkles size={14} />
-              Checkout premium
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold">
-              <Lock size={14} />
-              Ambiente protegido
-            </span>
+    <div className="bg-gradient-to-b from-gray-50/80 to-white min-h-screen py-8 md:py-12 lg:py-16">
+      <div className="container mx-auto px-4">
+        {/* Header Section */}
+        <div className={`${panelClass} mb-10 md:mb-14`}>
+          <div className="flex items-start gap-4 mb-8">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-green-600 bg-green-50 flex-shrink-0">
+              <ShieldCheck size={28} className="text-green-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs uppercase tracking-[0.16em] font-black text-green-700 mb-2">Checkout Seguro</p>
+              <h1 className="text-4xl md:text-5xl font-black text-gray-900">Finalize sua compra</h1>
+              <p className="text-gray-600 mt-3 max-w-2xl text-base leading-relaxed">
+                Confirme seu endereço e escolha a forma de pagamento. 100% seguro e criptografado.
+              </p>
+            </div>
           </div>
 
-          <h1 className="relative z-10 mt-4 text-3xl font-black text-white md:text-4xl">Finalize seu pagamento</h1>
-          <p className="relative z-10 mt-3 max-w-3xl text-sm text-emerald-50 md:text-base">
-            Revise endereco, confirme o metodo e conclua com seguranca. A validacao do pagamento acontece em fluxo
-            protegido antes da confirmacao final do pedido.
-          </p>
-
-          <div className="relative z-10 mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/25 bg-white/15 px-4 py-3 text-sm font-bold">1. Entrega</div>
-            <div className="rounded-2xl border border-white/25 bg-white/15 px-4 py-3 text-sm font-bold">2. Pagamento</div>
-            <div className="rounded-2xl border border-white/25 bg-white/15 px-4 py-3 text-sm font-bold">3. Confirmacao</div>
+          {/* Progress Steps */}
+          <div className="grid grid-cols-3 gap-3 md:gap-4">
+            <div className="rounded-2xl border-2 border-green-600 bg-green-50 px-4 md:px-6 py-4 text-center hover:shadow-md transition-shadow">
+              <div className="text-xs uppercase tracking-wider font-black text-green-700">
+                <div className="text-lg font-black mb-1">✓</div>
+                Endereço
+              </div>
+            </div>
+            <div className="rounded-2xl border-2 border-green-600 bg-green-50 px-4 md:px-6 py-4 text-center hover:shadow-md transition-shadow">
+              <div className="text-xs uppercase tracking-wider font-black text-green-700">
+                <div className="text-lg font-black mb-1">✓</div>
+                Pagamento
+              </div>
+            </div>
+            <div className="rounded-2xl border-2 border-black/20 bg-white px-4 md:px-6 py-4 text-center">
+              <div className="text-xs uppercase tracking-wider font-semibold text-gray-500">
+                <div className="text-lg font-black mb-1">3</div>
+                Confirmação
+              </div>
+            </div>
           </div>
-        </section>
+        </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-[1.25fr_0.75fr]">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_380px]">
+          {/* Form Section */}
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Error Alert */}
             {error && (
-              <div className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-                {error}
+              <div className="rounded-2xl border-2 border-red-300 bg-red-50 px-6 py-5 flex gap-4 items-start animate-in fade-in slide-in-from-top-2">
+                <AlertCircle className="text-red-600 flex-shrink-0 mt-1" size={22} />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-red-800">Erro ao processar compra</p>
+                  <p className="text-sm text-red-700 mt-1 leading-relaxed">{error}</p>
+                </div>
               </div>
             )}
 
-            <section className={sectionCardClass}>
-              <div className="mb-6 flex items-start gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-700">
-                  <MapPin size={20} />
+            {/* Delivery Address Section */}
+            <section className={panelClass}>
+              <div className="mb-8 flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-green-600 bg-green-50 flex-shrink-0">
+                  <MapPin size={22} className="text-green-600" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-black text-gray-900 md:text-2xl">Endereco de entrega</h2>
-                  <p className="text-sm text-gray-600">Dados completos evitam atraso no despacho do pedido.</p>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-black text-gray-900">Endereço de entrega</h2>
+                  <p className="text-sm text-gray-600 mt-2">Todos os campos são necessários</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {addressFields.map((field) => (
-                  <label key={field.name} className={field.colSpan || ''}>
-                    <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.12em] text-gray-600">
-                      {field.label}
-                    </span>
-                    <input
-                      type="text"
-                      name={field.name}
-                      autoComplete={field.autoComplete}
-                      placeholder={field.placeholder}
-                      value={formData[field.name]}
-                      onChange={handleInputChange}
-                      className={inputClass}
-                      required={field.name !== 'complement'}
-                    />
-                  </label>
-                ))}
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Rua</label>
+                  <input
+                    type="text"
+                    name="street"
+                    placeholder="Ex: Avenida Paulista"
+                    value={formData.street}
+                    onChange={handleInputChange}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Número</label>
+                  <input
+                    type="text"
+                    name="number"
+                    placeholder="Ex: 1000"
+                    value={formData.number}
+                    onChange={handleInputChange}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Complemento</label>
+                  <input
+                    type="text"
+                    name="complement"
+                    placeholder="Apto, andar, bloco... (opcional)"
+                    value={formData.complement}
+                    onChange={handleInputChange}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Cidade</label>
+                  <input
+                    type="text"
+                    name="city"
+                    placeholder="Ex: São Paulo"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Estado</label>
+                  <input
+                    type="text"
+                    name="state"
+                    placeholder="Ex: SP"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    className={inputClass}
+                    required
+                    maxLength={2}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">CEP</label>
+                  <input
+                    type="text"
+                    name="zipcode"
+                    placeholder="Ex: 01311-100"
+                    value={formData.zipcode}
+                    onChange={handleInputChange}
+                    className={inputClass}
+                    required
+                  />
+                </div>
               </div>
             </section>
 
-            <section className={sectionCardClass}>
-              <div className="mb-6 flex items-start gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                  <CreditCard size={20} />
+            {/* Payment Method Section */}
+            <section className={panelClass}>
+              <div className="mb-8 flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-blue-600 bg-blue-50 flex-shrink-0">
+                  <CreditCard size={22} className="text-blue-600" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-black text-gray-900 md:text-2xl">Metodo de pagamento</h2>
-                  <p className="text-sm text-gray-600">Escolha o formato ideal para fechar sua compra.</p>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-black text-gray-900">Forma de pagamento</h2>
+                  <p className="text-sm text-gray-600 mt-2">Escolha seu método preferido</p>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 mb-7">
                 {paymentOptions.map((option) => {
                   const Icon = option.icon;
                   const isSelected = paymentMethod === option.value;
@@ -369,162 +350,197 @@ export function CheckoutPage() {
                   return (
                     <label
                       key={option.value}
-                      className={`group flex cursor-pointer items-center gap-4 rounded-2xl border px-4 py-3 transition ${
+                      className={`flex cursor-pointer items-center gap-4 rounded-2xl border-2 px-6 py-4 transition-all duration-200 ${
                         isSelected
-                          ? 'border-emerald-300 bg-[linear-gradient(120deg,#ecfdf5_0%,#f0fdf4_60%,#fffbeb_100%)] shadow-[0_8px_20px_rgba(16,185,129,0.15)]'
-                          : 'border-black/15 bg-white hover:border-black/35'
+                          ? 'border-green-600 bg-green-50 shadow-md'
+                          : 'border-black/15 bg-white hover:border-black/40 hover:bg-gray-50'
                       }`}
                     >
                       <input
                         type="radio"
                         value={option.value}
                         checked={isSelected}
-                        onChange={(event) => setPaymentMethod(event.target.value as PaymentMethodValue)}
+                        onChange={(e) => setPaymentMethod(e.target.value as PaymentMethodValue)}
                         className="sr-only"
                       />
-
-                      <div
-                        className={`flex h-11 w-11 items-center justify-center rounded-2xl border transition ${
-                          isSelected ? 'border-emerald-300 bg-white text-emerald-700' : 'border-black/20 text-gray-700'
-                        }`}
-                      >
-                        <Icon size={19} />
+                      <div className={`flex h-12 w-12 items-center justify-center rounded-xl border-2 flex-shrink-0 transition-all duration-200 ${
+                        isSelected
+                          ? 'border-green-600 bg-green-100'
+                          : 'border-gray-300 bg-white'
+                      }`}>
+                        <Icon size={22} className={isSelected ? 'text-green-700' : 'text-gray-700'} />
                       </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-black text-gray-900 md:text-base">{option.label}</p>
-                          <span className="rounded-full bg-black/5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-600">
-                            {option.highlight}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs text-gray-600">{option.description}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-gray-900">{option.label}</p>
+                        <p className="text-sm text-gray-600 mt-1">{option.description}</p>
                       </div>
-
-                      {isSelected ? (
-                        <CheckCircle2 size={20} className="text-emerald-600" />
-                      ) : (
-                        <span className="h-5 w-5 rounded-full border border-black/25" />
-                      )}
+                      <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+                        isSelected
+                          ? 'border-green-600 bg-green-600'
+                          : 'border-gray-300 bg-white'
+                      }`}>
+                        {isSelected && <CheckCircle2 size={16} className="text-white" />}
+                      </div>
                     </label>
                   );
                 })}
               </div>
 
-              <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                  <div className="flex items-center gap-2 font-bold">
-                    <ShieldCheck size={15} />
-                    Validacao antifraude ativa
-                  </div>
-                  <p className="mt-1 text-xs text-emerald-700">A analise roda antes da confirmacao do pedido.</p>
-                </div>
-                <div className="rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
-                  <div className="flex items-center gap-2 font-bold">
-                    <Clock3 size={15} />
-                    Atualizacao de status
-                  </div>
-                  <p className="mt-1 text-xs text-yellow-700">Aprovacoes sao notificadas no checkout e em pedidos.</p>
+              {/* Security Notice */}
+              <div className="rounded-xl border-2 border-amber-200 bg-amber-50 px-5 py-4 flex gap-3">
+                <ShieldCheck size={20} className="text-amber-700 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-bold">Totalmente seguro.</p>
+                  <p className="mt-1">Criptografia SSL de 256-bits. Seus dados nunca são armazenados.</p>
                 </div>
               </div>
             </section>
 
-            <section className={sectionCardClass}>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700">
-                <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5">
-                  <ShieldCheck size={15} className="text-green-700" />
-                  Compra segura
+            {/* Trust Badges */}
+            <section className={`${panelClass} bg-gradient-to-r from-green-50 to-blue-50 border-green-700`}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck size={22} className="text-green-700 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-gray-900">Compra segura</p>
+                    <p className="text-xs text-gray-600 mt-1">Ambiente 100% protegido</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5">
-                  <Truck size={15} className="text-green-700" />
-                  Envio rapido
+                <div className="flex items-start gap-3">
+                  <Truck size={22} className="text-green-700 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-gray-900">Entrega rápida</p>
+                    <p className="text-xs text-gray-600 mt-1">Frete grátis em qualquer lugar</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5">
-                  <Wallet size={15} className="text-green-700" />
-                  Suporte prioritario
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 size={22} className="text-green-700 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-gray-900">Suporte 24/7</p>
+                    <p className="text-xs text-gray-600 mt-1">Sempre à sua disposição</p>
+                  </div>
                 </div>
               </div>
             </section>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="group flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-black/70 bg-[linear-gradient(135deg,#00A651_0%,#047857_100%)] px-5 py-3.5 text-base font-black text-white shadow-[0_12px_28px_rgba(0,166,81,0.35)] transition hover:-translate-y-0.5 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white" />
-                  Validando e confirmando pagamento...
-                </>
-              ) : (
-                <>
-                  Confirmar e pagar
-                  <ArrowRight size={18} className="transition group-hover:translate-x-0.5" />
-                </>
-              )}
-            </button>
+            {/* Action Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => navigate('/cart')}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-black px-6 py-4 font-bold text-black transition-all duration-200 hover:bg-gray-100 active:translate-y-0.5 cursor-pointer text-base"
+              >
+                <ArrowLeft size={20} />
+                <span>Voltar ao carrinho</span>
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-black py-4 px-6 text-base font-black text-white transition-all duration-200 hover:brightness-95 hover:shadow-lg active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                style={{ background: 'var(--primary-green)' }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    <span>Processando...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={20} />
+                    <span>Finalizar compra</span>
+                  </>
+                )}
+              </button>
+            </div>
           </form>
 
-          <aside className="self-start xl:sticky xl:top-24">
-            <div className={`${sectionCardClass} border-black/10`}>
-              <h2 className="text-2xl font-black text-gray-900">Resumo da compra</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                {totalItems} {totalItems === 1 ? 'item selecionado' : 'itens selecionados'}
+          {/* Order Summary Sidebar */}
+          <aside className="self-start xl:sticky xl:top-28">
+            <div className={panelClass}>
+              <h2 className="text-2xl font-black text-gray-900 mb-2">Resumo da compra</h2>
+              <p className="text-sm text-gray-600 mb-6">
+                {totalItems} {totalItems === 1 ? 'item' : 'itens'} no carrinho
               </p>
 
-              <div className="mt-5 max-h-[350px] space-y-3 overflow-y-auto pr-1">
-                {items.map((item) => (
-                  <div
-                    key={item.product.id}
-                    className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white p-3 shadow-[0_5px_14px_rgba(0,0,0,0.06)]"
-                  >
-                    <img
-                      src={item.product.image}
-                      alt={item.product.model}
-                      className="h-16 w-16 rounded-xl border border-black/10 object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-black text-gray-900">
-                        {item.product.brand} {item.product.model}
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        {item.product.width}/{item.product.profile}R{item.product.diameter} x{item.quantity}
+              {/* Items List */}
+              <div className="mb-6 pb-6 border-b-2 border-black/10">
+                <div className="max-h-[420px] space-y-3 overflow-y-auto pr-2">
+                  {items.map((item) => (
+                    <div
+                      key={item.product.id}
+                      className="group flex items-start gap-3 rounded-xl border border-black/10 p-4 bg-gray-50/50 hover:bg-gray-100 transition-colors duration-200"
+                    >
+                      <img
+                        src={item.product.image}
+                        alt={item.product.model}
+                        className="h-16 w-16 rounded-lg border border-black/10 object-cover group-hover:shadow-md transition-shadow duration-200 flex-shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-gray-900">
+                          {item.product.brand} {item.product.model}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {item.product.width}/{item.product.profile}R{item.product.diameter}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs bg-green-100 text-green-800 px-2.5 py-1 rounded-lg font-semibold">
+                            Qty: {item.quantity}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-sm font-black text-green-700 shrink-0 text-right">
+                        {formatCurrency(item.product.price * item.quantity)}
                       </p>
                     </div>
-                    <p className="text-sm font-black text-gray-900">{formatCurrency(item.product.price * item.quantity)}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              <div className="my-6 h-px bg-black/10" />
-
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
+              {/* Pricing */}
+              <div className="space-y-4 mb-6">
+                <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Subtotal</span>
                   <span className="font-bold text-gray-900">{formatCurrency(subtotal)}</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Frete</span>
-                  <span className="font-bold text-emerald-700">Gratis</span>
+                  <span className="font-bold text-green-700 bg-green-100 px-3 py-1 rounded-lg text-xs">
+                    Grátis
+                  </span>
                 </div>
-                <div className="flex items-center justify-between border-t border-black/10 pt-3 text-lg font-black text-gray-900">
-                  <span>Total</span>
-                  <span>{formatCurrency(subtotal)}</span>
+
+                <div className="h-px bg-black/15" />
+
+                <div className="flex items-center justify-between">
+                  <span className="text-base font-black text-gray-900">Total</span>
+                  <span className="text-3xl font-black text-green-700">{formatCurrency(subtotal)}</span>
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-800">Metodo selecionado</p>
-                <p className="mt-1 text-base font-black text-gray-900">{selectedPaymentOption.label}</p>
-                <p className="mt-1 text-xs text-gray-700">
+              {/* Selected Payment Method Info */}
+              <div className="rounded-xl border-2 border-blue-200 bg-blue-50 px-5 py-4 mb-6">
+                <p className="text-xs uppercase tracking-wider font-bold text-blue-900 mb-2">Método selecionado</p>
+                <div className="flex items-center gap-2">
+                  {selectedPaymentOption.icon && 
+                    <selectedPaymentOption.icon size={18} className="text-blue-700" />
+                  }
+                  <p className="font-bold text-gray-900">{selectedPaymentOption.label}</p>
+                </div>
+                <p className="text-xs text-blue-800 mt-2">
                   {paymentMethod === 'credit_card'
-                    ? 'Aprovacao em segundos apos validacao no checkout.'
-                    : 'Aprovacao concluida apos compensacao do pagamento.'}
+                    ? 'Parcelamento disponível em até 12x sem juros.'
+                    : 'Confirmação após compensação do pagamento.'}
                 </p>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-yellow-200 bg-yellow-50/80 p-4 text-xs text-yellow-900">
-                Ao finalizar, voce concorda com os termos de compra e politica de entrega.
+              {/* Terms Agreement */}
+              <div className="rounded-xl border-2 border-amber-200 bg-amber-50 px-5 py-4 text-xs text-amber-900 leading-relaxed">
+                <p className="font-bold mb-2">Ao finalizar você concorda com:</p>
+                <ul className="space-y-1.5 text-amber-900">
+                  <li>✓ Termos de compra e direitos do consumidor</li>
+                  <li>✓ Política de entrega e prazos</li>
+                  <li>✓ Endereço de entrega informado</li>
+                </ul>
               </div>
             </div>
           </aside>

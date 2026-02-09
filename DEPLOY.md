@@ -1,61 +1,61 @@
-# 🚀 GUIA DE DEPLOY - PneuStore
+﻿# ðŸš€ GUIA DE DEPLOY - PneuStore
 
-## 📋 Pré-requisitos para Deploy
+## ðŸ“‹ PrÃ©-requisitos para Deploy
 
 Antes de fazer o deploy, certifique-se de que:
 
 - [x] Projeto testado localmente
 - [x] API Black Cat configurada e testada
 - [x] Todos os produtos adicionados
-- [x] Informações da loja configuradas
+- [x] InformaÃ§Ãµes da loja configuradas
 - [x] Fluxo de compra testado completamente
 - [x] Responsividade verificada em todos os dispositivos
 
 ---
 
-## 🌐 Opções de Hospedagem
+## ðŸŒ OpÃ§Ãµes de Hospedagem
 
-### 1. Vercel (Recomendado) ⭐
+### 1. Vercel (Recomendado) â­
 
 **Vantagens:**
-- Deploy automático via Git
+- Deploy automÃ¡tico via Git
 - HTTPS gratuito
 - CDN global
-- Variáveis de ambiente seguras
-- Zero configuração
+- VariÃ¡veis de ambiente seguras
+- Zero configuraÃ§Ã£o
 
 **Passos:**
 
 1. **Criar conta na Vercel**
    - Acesse: https://vercel.com
-   - Faça login com GitHub/GitLab/Bitbucket
+   - FaÃ§a login com GitHub/GitLab/Bitbucket
 
-2. **Conectar repositório**
+2. **Conectar repositÃ³rio**
    ```bash
    # Instale o Vercel CLI
    npm install -g vercel
    
-   # Faça login
+   # FaÃ§a login
    vercel login
    
    # Deploy
    vercel
    ```
 
-3. **Configurar variáveis de ambiente**
+3. **Configurar variÃ¡veis de ambiente**
    - Acesse o dashboard do projeto
-   - Vá em Settings → Environment Variables
+   - VÃ¡ em Settings â†’ Environment Variables
    - Adicione:
      ```
-     VITE_BLACKCAT_API_KEY=sua_chave_aqui
+     PAYMENT_API_KEY=sua_chave_aqui
      VITE_BLACKCAT_ENV=production
      ```
 
-4. **Deploy automático**
-   - Cada push no branch principal faz deploy automático
+4. **Deploy automÃ¡tico**
+   - Cada push no branch principal faz deploy automÃ¡tico
    - Preview deployments para branches de feature
 
-**Comando único:**
+**Comando Ãºnico:**
 ```bash
 vercel --prod
 ```
@@ -65,10 +65,10 @@ vercel --prod
 ### 2. Netlify
 
 **Vantagens:**
-- Interface amigável
+- Interface amigÃ¡vel
 - Deploy via drag-and-drop
-- Formulários integrados
-- Funções serverless
+- FormulÃ¡rios integrados
+- FunÃ§Ãµes serverless
 
 **Passos:**
 
@@ -92,19 +92,19 @@ vercel --prod
 3. **Ou via interface web**
    - Acesse: https://app.netlify.com
    - Arraste a pasta `dist/` para o site
-   - Configure variáveis de ambiente
+   - Configure variÃ¡veis de ambiente
 
-**Configuração de variáveis:**
-- Site Settings → Build & Deploy → Environment
-- Adicione as variáveis VITE_*
+**ConfiguraÃ§Ã£o de variÃ¡veis:**
+- Site Settings â†’ Build & Deploy â†’ Environment
+- Adicione as variÃ¡veis VITE_*
 
 ---
 
 ### 3. AWS Amplify
 
 **Vantagens:**
-- Integração com AWS
-- Escalabilidade automática
+- IntegraÃ§Ã£o com AWS
+- Escalabilidade automÃ¡tica
 - Backend integrado
 
 **Passos:**
@@ -132,8 +132,8 @@ vercel --prod
 ### 4. GitHub Pages
 
 **Vantagens:**
-- Gratuito para repositórios públicos
-- Integração direta com GitHub
+- Gratuito para repositÃ³rios pÃºblicos
+- IntegraÃ§Ã£o direta com GitHub
 
 **Passos:**
 
@@ -160,7 +160,7 @@ vercel --prod
 
 ---
 
-## 🔧 Configuração de Build
+## ðŸ”§ ConfiguraÃ§Ã£o de Build
 
 ### Vite Config (vite.config.ts)
 
@@ -187,13 +187,13 @@ export default defineConfig({
 });
 ```
 
-### Build para Produção
+### Build para ProduÃ§Ã£o
 
 ```bash
 # Limpar cache
 rm -rf node_modules dist
 
-# Reinstalar dependências
+# Reinstalar dependÃªncias
 npm install
 
 # Build otimizado
@@ -205,21 +205,21 @@ npm run preview
 
 ---
 
-## 🔐 Variáveis de Ambiente
+## ðŸ” VariÃ¡veis de Ambiente
 
-### Arquivo .env (Produção)
+### Arquivo .env (ProduÃ§Ã£o)
 
 ```env
-# Black Cat Payments - PRODUÇÃO
-VITE_BLACKCAT_API_KEY=sk_live_sua_chave_producao
+# Black Cat Payments - PRODUÃ‡ÃƒO
+PAYMENT_API_KEY=sk_live_sua_chave_producao
 VITE_BLACKCAT_ENV=production
 
-# Informações da Loja
+# InformaÃ§Ãµes da Loja
 VITE_STORE_NAME=PneuStore
 VITE_STORE_CNPJ=00.000.000/0000-00
 VITE_STORE_PHONE=(11) 99999-9999
 VITE_STORE_EMAIL=contato@pneustore.com.br
-VITE_STORE_ADDRESS=Rua Exemplo, 123 - Centro - São Paulo/SP
+VITE_STORE_ADDRESS=Rua Exemplo, 123 - Centro - SÃ£o Paulo/SP
 
 # Analytics (opcional)
 VITE_GA_TRACKING_ID=UA-XXXXXXXXX-X
@@ -229,10 +229,10 @@ VITE_GA_TRACKING_ID=UA-XXXXXXXXX-X
 
 ```env
 # Black Cat Payments - SANDBOX
-VITE_BLACKCAT_API_KEY=sk_test_sua_chave_sandbox
+PAYMENT_API_KEY=sk_test_sua_chave_sandbox
 VITE_BLACKCAT_ENV=sandbox
 
-# Informações da Loja (teste)
+# InformaÃ§Ãµes da Loja (teste)
 VITE_STORE_NAME=PneuStore - DEV
 VITE_STORE_CNPJ=00.000.000/0000-00
 VITE_STORE_PHONE=(11) 99999-9999
@@ -241,7 +241,7 @@ VITE_STORE_EMAIL=dev@pneustore.com.br
 
 ---
 
-## 📊 Otimizações de Performance
+## ðŸ“Š OtimizaÃ§Ãµes de Performance
 
 ### 1. Imagens
 
@@ -255,7 +255,7 @@ imagemin src/assets/* --out-dir=src/assets/optimized
 
 ### 2. Code Splitting
 
-Já implementado no projeto com React.lazy:
+JÃ¡ implementado no projeto com React.lazy:
 
 ```typescript
 // Exemplo de lazy loading
@@ -285,7 +285,7 @@ Configure headers de cache no servidor:
 
 ---
 
-## 🔍 SEO e Meta Tags
+## ðŸ” SEO e Meta Tags
 
 ### Adicionar no index.html
 
@@ -297,20 +297,20 @@ Configure headers de cache no servidor:
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <!-- SEO -->
-  <title>PneuStore - Pneus com os Melhores Preços</title>
-  <meta name="description" content="Compre pneus das melhores marcas com até 12x sem juros. Entrega rápida e segura. Goodyear, Michelin, Pirelli e mais!" />
+  <title>PneuStore - Pneus com os Melhores PreÃ§os</title>
+  <meta name="description" content="Compre pneus das melhores marcas com atÃ© 12x sem juros. Entrega rÃ¡pida e segura. Goodyear, Michelin, Pirelli e mais!" />
   <meta name="keywords" content="pneus, pneus online, comprar pneus, pneus baratos, goodyear, michelin, pirelli" />
   
   <!-- Open Graph -->
-  <meta property="og:title" content="PneuStore - Pneus com os Melhores Preços" />
-  <meta property="og:description" content="Compre pneus das melhores marcas com até 12x sem juros" />
+  <meta property="og:title" content="PneuStore - Pneus com os Melhores PreÃ§os" />
+  <meta property="og:description" content="Compre pneus das melhores marcas com atÃ© 12x sem juros" />
   <meta property="og:image" content="https://pneustore.com.br/og-image.jpg" />
   <meta property="og:url" content="https://pneustore.com.br" />
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="PneuStore - Pneus com os Melhores Preços" />
-  <meta name="twitter:description" content="Compre pneus das melhores marcas com até 12x sem juros" />
+  <meta name="twitter:title" content="PneuStore - Pneus com os Melhores PreÃ§os" />
+  <meta name="twitter:description" content="Compre pneus das melhores marcas com atÃ© 12x sem juros" />
   
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -324,7 +324,7 @@ Configure headers de cache no servidor:
 
 ---
 
-## 📈 Analytics e Monitoramento
+## ðŸ“ˆ Analytics e Monitoramento
 
 ### Google Analytics
 
@@ -365,28 +365,28 @@ Sentry.init({
 
 ---
 
-## 🔒 Checklist de Segurança
+## ðŸ”’ Checklist de SeguranÃ§a
 
 Antes do deploy:
 
-- [ ] Arquivo .env não está no repositório
+- [ ] Arquivo .env nÃ£o estÃ¡ no repositÃ³rio
 - [ ] .gitignore configurado corretamente
-- [ ] API Keys de produção configuradas
+- [ ] API Keys de produÃ§Ã£o configuradas
 - [ ] HTTPS configurado
-- [ ] Certificado SSL válido
-- [ ] Headers de segurança configurados
+- [ ] Certificado SSL vÃ¡lido
+- [ ] Headers de seguranÃ§a configurados
 - [ ] CORS configurado corretamente
-- [ ] Rate limiting implementado (se necessário)
+- [ ] Rate limiting implementado (se necessÃ¡rio)
 - [ ] Logs de erro configurados
 - [ ] Backup configurado
 
 ---
 
-## 🧪 Testes Pós-Deploy
+## ðŸ§ª Testes PÃ³s-Deploy
 
 ### Checklist de Testes
 
-1. **Funcionalidades Básicas**
+1. **Funcionalidades BÃ¡sicas**
    - [ ] Homepage carrega corretamente
    - [ ] Busca de pneus funciona
    - [ ] Filtros aplicam corretamente
@@ -394,18 +394,18 @@ Antes do deploy:
    - [ ] Login/Registro funcionam
 
 2. **Checkout e Pagamento**
-   - [ ] Formulário de checkout valida dados
-   - [ ] Pagamento com cartão funciona
+   - [ ] FormulÃ¡rio de checkout valida dados
+   - [ ] Pagamento com cartÃ£o funciona
    - [ ] PIX gera QR Code
-   - [ ] Boleto gera código de barras
-   - [ ] Confirmação de pedido exibida
+   - [ ] Boleto gera cÃ³digo de barras
+   - [ ] ConfirmaÃ§Ã£o de pedido exibida
 
 3. **Dashboard Admin**
    - [ ] Login admin funciona
    - [ ] Adicionar produto funciona
    - [ ] Editar produto funciona
    - [ ] Excluir produto funciona
-   - [ ] Estatísticas carregam
+   - [ ] EstatÃ­sticas carregam
 
 4. **Responsividade**
    - [ ] Mobile (< 640px)
@@ -420,11 +420,11 @@ Antes do deploy:
 
 ---
 
-## 🆘 Troubleshooting
+## ðŸ†˜ Troubleshooting
 
 ### Erro: "Failed to load module"
 
-**Solução:**
+**SoluÃ§Ã£o:**
 ```bash
 # Limpar cache e rebuildar
 rm -rf node_modules dist .vite
@@ -434,14 +434,14 @@ npm run build
 
 ### Erro: "Environment variable not defined"
 
-**Solução:**
-- Verifique se as variáveis estão configuradas no painel da hospedagem
-- Variáveis devem começar com `VITE_`
-- Faça redeploy após adicionar variáveis
+**SoluÃ§Ã£o:**
+- Verifique se as variÃ¡veis estÃ£o configuradas no painel da hospedagem
+- VariÃ¡veis devem comeÃ§ar com `VITE_`
+- FaÃ§a redeploy apÃ³s adicionar variÃ¡veis
 
 ### Erro: "404 on page refresh"
 
-**Solução para Vercel:**
+**SoluÃ§Ã£o para Vercel:**
 ```json
 // vercel.json
 {
@@ -451,7 +451,7 @@ npm run build
 }
 ```
 
-**Solução para Netlify:**
+**SoluÃ§Ã£o para Netlify:**
 ```
 // _redirects
 /*    /index.html   200
@@ -459,7 +459,7 @@ npm run build
 
 ---
 
-## 📞 Suporte
+## ðŸ“ž Suporte
 
 **Problemas com Deploy?**
 - Vercel: https://vercel.com/support
@@ -472,20 +472,21 @@ npm run build
 
 ---
 
-## 🎉 Deploy Concluído!
+## ðŸŽ‰ Deploy ConcluÃ­do!
 
-Após o deploy bem-sucedido:
+ApÃ³s o deploy bem-sucedido:
 
-1. ✅ Teste todas as funcionalidades
-2. ✅ Configure domínio personalizado
-3. ✅ Configure SSL/HTTPS
-4. ✅ Adicione ao Google Search Console
-5. ✅ Configure Google Analytics
-6. ✅ Monitore erros com Sentry
-7. ✅ Faça backup regular dos dados
+1. âœ… Teste todas as funcionalidades
+2. âœ… Configure domÃ­nio personalizado
+3. âœ… Configure SSL/HTTPS
+4. âœ… Adicione ao Google Search Console
+5. âœ… Configure Google Analytics
+6. âœ… Monitore erros com Sentry
+7. âœ… FaÃ§a backup regular dos dados
 
-**Sua loja está no ar! 🚀**
+**Sua loja estÃ¡ no ar! ðŸš€**
 
 ---
 
-*Mantenha o sistema atualizado e monitore regularmente para garantir a melhor experiência aos seus clientes.*
+*Mantenha o sistema atualizado e monitore regularmente para garantir a melhor experiÃªncia aos seus clientes.*
+

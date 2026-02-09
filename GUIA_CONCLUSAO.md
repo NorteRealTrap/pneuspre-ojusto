@@ -1,4 +1,4 @@
-# 🚀 GUIA COMPLETO - CONCLUSÃO DO SITE
+﻿# ðŸš€ GUIA COMPLETO - CONCLUSÃƒO DO SITE
 
 ## PASSO 1: Configurar Supabase (5 minutos)
 
@@ -8,26 +8,26 @@
 3. Preencha:
    - Project name: `pneus-precojusto`
    - Database password: (salve em local seguro)
-   - Region: `South America (São Paulo)`
+   - Region: `South America (SÃ£o Paulo)`
 4. Clique "Create new project" e aguarde
 
 ### 1.2 Executar SQL no Dashboard
-1. No Supabase Dashboard, vá para "SQL Editor"
+1. No Supabase Dashboard, vÃ¡ para "SQL Editor"
 2. Clique em "New Query"
-3. Copie TODO o conteúdo do arquivo `SUPABASE_SETUP.sql`
+3. Copie TODO o conteÃºdo do arquivo `SUPABASE_SETUP.sql`
 4. Cole na query
 5. Clique "Run"
 
 ### 1.3 Obter Credenciais
-1. Vá para "Settings" > "API"
+1. VÃ¡ para "Settings" > "API"
 2. Copie:
-   - **Project URL** → `VITE_SUPABASE_URL`
-   - **anon public** → `VITE_SUPABASE_ANON_KEY`
+   - **Project URL** â†’ `VITE_SUPABASE_URL`
+   - **anon public** â†’ `VITE_SUPABASE_ANON_KEY`
 3. Cole no arquivo `.env`
 
 ---
 
-## PASSO 2: Instalar Dependências (2 minutos)
+## PASSO 2: Instalar DependÃªncias (2 minutos)
 
 ```bash
 npm install
@@ -35,7 +35,7 @@ npm install
 
 ---
 
-## PASSO 3: Configurar Variáveis de Ambiente
+## PASSO 3: Configurar VariÃ¡veis de Ambiente
 
 Edite o arquivo `.env`:
 
@@ -43,9 +43,9 @@ Edite o arquivo `.env`:
 VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_ANON_KEY=sua_anon_key_aqui
 VITE_PAYMENT_PROVIDER=blackcat
-VITE_PAYMENT_API_KEY=sua_chave_aqui
+PAYMENT_API_KEY=sua_chave_aqui
 VITE_PAYMENT_ENV=sandbox
-VITE_STORE_NAME=Pneus.PreçoJusto
+VITE_STORE_NAME=Pneus.PreÃ§oJusto
 VITE_STORE_CNPJ=00.000.000/0000-00
 VITE_STORE_PHONE=(11) 99999-9999
 VITE_STORE_EMAIL=contato@pneusprecojusto.com.br
@@ -55,24 +55,24 @@ VITE_STORE_EMAIL=contato@pneusprecojusto.com.br
 
 ## PASSO 4: Adicionar Produtos ao Supabase
 
-### Opção A: Via Dashboard (Manual)
-1. No Supabase, vá para "Table Editor"
+### OpÃ§Ã£o A: Via Dashboard (Manual)
+1. No Supabase, vÃ¡ para "Table Editor"
 2. Clique em "products"
 3. Clique "Insert row"
 4. Preencha os dados
 
-### Opção B: Via SQL (Rápido)
-1. Vá para "SQL Editor"
+### OpÃ§Ã£o B: Via SQL (RÃ¡pido)
+1. VÃ¡ para "SQL Editor"
 2. Execute este SQL:
 
 ```sql
 INSERT INTO products (brand, model, width, profile, diameter, load_index, speed_rating, price, stock, image, features, category, season, runflat, featured, description)
 VALUES
-('Michelin', 'Pilot Sport 4', '225', '45', '17', '91', 'Y', 1299.90, 50, 'https://via.placeholder.com/400x300?text=Michelin+Pilot', ARRAY['Esportivo', 'Alto Desempenho', 'Aderência'], 'Automóvel', 'summer', false, true, 'Pneu esportivo de alta performance'),
-('Pirelli', 'Cinturato P7', '205', '55', '16', '91', 'V', 899.90, 75, 'https://via.placeholder.com/400x300?text=Pirelli+Cinturato', ARRAY['Conforto', 'Durabilidade', 'Economia'], 'Automóvel', 'all-season', false, true, 'Pneu versátil para uso urbano'),
-('Goodyear', 'Wrangler TrailRunner', '265', '70', '16', '112', 'S', 1599.90, 30, 'https://via.placeholder.com/400x300?text=Goodyear+Wrangler', ARRAY['Off-road', 'Tração', 'Durabilidade'], 'SUV', 'all-season', false, true, 'Pneu para SUV e 4x4'),
-('Continental', 'EcoContact 6', '195', '65', '15', '91', 'H', 749.90, 100, 'https://via.placeholder.com/400x300?text=Continental+Eco', ARRAY['Economia', 'Eco-friendly', 'Conforto'], 'Automóvel', 'all-season', false, false, 'Pneu econômico e sustentável'),
-('Bridgestone', 'Turanza T005', '215', '60', '17', '96', 'H', 1099.90, 45, 'https://via.placeholder.com/400x300?text=Bridgestone+Turanza', ARRAY['Conforto', 'Segurança', 'Durabilidade'], 'Automóvel', 'all-season', false, false, 'Pneu premium para conforto máximo');
+('Michelin', 'Pilot Sport 4', '225', '45', '17', '91', 'Y', 1299.90, 50, 'https://via.placeholder.com/400x300?text=Michelin+Pilot', ARRAY['Esportivo', 'Alto Desempenho', 'AderÃªncia'], 'AutomÃ³vel', 'summer', false, true, 'Pneu esportivo de alta performance'),
+('Pirelli', 'Cinturato P7', '205', '55', '16', '91', 'V', 899.90, 75, 'https://via.placeholder.com/400x300?text=Pirelli+Cinturato', ARRAY['Conforto', 'Durabilidade', 'Economia'], 'AutomÃ³vel', 'all-season', false, true, 'Pneu versÃ¡til para uso urbano'),
+('Goodyear', 'Wrangler TrailRunner', '265', '70', '16', '112', 'S', 1599.90, 30, 'https://via.placeholder.com/400x300?text=Goodyear+Wrangler', ARRAY['Off-road', 'TraÃ§Ã£o', 'Durabilidade'], 'SUV', 'all-season', false, true, 'Pneu para SUV e 4x4'),
+('Continental', 'EcoContact 6', '195', '65', '15', '91', 'H', 749.90, 100, 'https://via.placeholder.com/400x300?text=Continental+Eco', ARRAY['Economia', 'Eco-friendly', 'Conforto'], 'AutomÃ³vel', 'all-season', false, false, 'Pneu econÃ´mico e sustentÃ¡vel'),
+('Bridgestone', 'Turanza T005', '215', '60', '17', '96', 'H', 1099.90, 45, 'https://via.placeholder.com/400x300?text=Bridgestone+Turanza', ARRAY['Conforto', 'SeguranÃ§a', 'Durabilidade'], 'AutomÃ³vel', 'all-season', false, false, 'Pneu premium para conforto mÃ¡ximo');
 ```
 
 ---
@@ -91,7 +91,7 @@ Acesse: http://localhost:5173
 
 ### 6.1 Criar Conta
 1. Clique em "Entrar" (canto superior direito)
-2. Clique em "Não tem uma conta? Cadastre-se"
+2. Clique em "NÃ£o tem uma conta? Cadastre-se"
 3. Preencha:
    - Email: seu-email@exemplo.com
    - Senha: senha123
@@ -109,15 +109,15 @@ Acesse: http://localhost:5173
 1. Clique em "Produtos"
 2. Veja os pneus carregados do Supabase
 3. Clique "Adicionar ao Carrinho"
-4. Clique no ícone do carrinho
+4. Clique no Ã­cone do carrinho
 5. Clique "Ir para Checkout"
-6. Preencha endereço
-7. Escolha método de pagamento
+6. Preencha endereÃ§o
+7. Escolha mÃ©todo de pagamento
 8. Clique "Finalizar Pedido"
 
 ### 6.4 Ver Pedidos
 1. Clique em "Meus Pedidos"
-2. Veja o histórico de compras
+2. Veja o histÃ³rico de compras
 
 ---
 
@@ -130,12 +130,12 @@ Acesse: http://localhost:5173
 4. Confirme email
 
 ### 7.2 Obter API Key
-1. No painel, vá para "Configurações" > "API"
+1. No painel, vÃ¡ para "ConfiguraÃ§Ãµes" > "API"
 2. Copie a chave
-3. Cole em `VITE_PAYMENT_API_KEY` no `.env`
+3. Cole em `PAYMENT_API_KEY` no `.env`
 
 ### 7.3 Integrar no Checkout
-O arquivo `src/services/paymentGateway.ts` já tem a integração pronta.
+O arquivo `src/services/paymentGateway.ts` jÃ¡ tem a integraÃ§Ã£o pronta.
 
 ---
 
@@ -155,15 +155,15 @@ npm run build
 
 ---
 
-## ✅ CHECKLIST FINAL
+## âœ… CHECKLIST FINAL
 
 - [ ] Supabase criado e SQL executado
-- [ ] Variáveis de ambiente configuradas
+- [ ] VariÃ¡veis de ambiente configuradas
 - [ ] Produtos adicionados ao banco
 - [ ] npm install executado
 - [ ] npm run dev funcionando
 - [ ] Conta criada e login funcionando
-- [ ] Produtos carregando na página
+- [ ] Produtos carregando na pÃ¡gina
 - [ ] Carrinho funcionando
 - [ ] Checkout funcionando
 - [ ] Pedidos salvando no banco
@@ -172,38 +172,39 @@ npm run build
 
 ---
 
-## 🆘 TROUBLESHOOTING
+## ðŸ†˜ TROUBLESHOOTING
 
 ### Erro: "VITE_SUPABASE_URL is not defined"
-**Solução:** Verifique se o arquivo `.env` está na raiz do projeto e reinicie o servidor
+**SoluÃ§Ã£o:** Verifique se o arquivo `.env` estÃ¡ na raiz do projeto e reinicie o servidor
 
-### Erro: "Produtos não carregam"
-**Solução:** 
+### Erro: "Produtos nÃ£o carregam"
+**SoluÃ§Ã£o:** 
 1. Verifique se a tabela `products` foi criada no Supabase
-2. Verifique se há produtos inseridos
+2. Verifique se hÃ¡ produtos inseridos
 3. Abra o console (F12) e veja o erro
 
-### Erro: "Não consigo fazer login"
-**Solução:**
-1. Verifique se a autenticação está habilitada no Supabase
+### Erro: "NÃ£o consigo fazer login"
+**SoluÃ§Ã£o:**
+1. Verifique se a autenticaÃ§Ã£o estÃ¡ habilitada no Supabase
 2. Confirme o email na caixa de entrada
 3. Tente criar uma nova conta
 
-### Erro: "Carrinho não persiste"
-**Solução:** Limpe o localStorage do navegador (F12 > Application > Clear Storage)
+### Erro: "Carrinho nÃ£o persiste"
+**SoluÃ§Ã£o:** Limpe o localStorage do navegador (F12 > Application > Clear Storage)
 
 ---
 
-## 📞 PRÓXIMOS PASSOS
+## ðŸ“ž PRÃ“XIMOS PASSOS
 
 1. **Integrar Pagamento Real** - Conectar Black Cat/Mercado Pago
-2. **Email Transacional** - Enviar confirmação de pedido
+2. **Email Transacional** - Enviar confirmaÃ§Ã£o de pedido
 3. **Dashboard Admin** - Gerenciar produtos e pedidos
-4. **Busca Avançada** - Filtros por especificações
-5. **Avaliações** - Sistema de reviews
+4. **Busca AvanÃ§ada** - Filtros por especificaÃ§Ãµes
+5. **AvaliaÃ§Ãµes** - Sistema de reviews
 6. **SEO** - Meta tags e sitemap
 7. **Analytics** - Google Analytics
 
 ---
 
-Pronto! Seu site está funcionando! 🎉
+Pronto! Seu site estÃ¡ funcionando! ðŸŽ‰
+

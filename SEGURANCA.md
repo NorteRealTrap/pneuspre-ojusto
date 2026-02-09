@@ -1,59 +1,59 @@
-# 🔐 SEGURANÇA E BOAS PRÁTICAS - PneuStore
+﻿# ðŸ” SEGURANÃ‡A E BOAS PRÃTICAS - PneuStore
 
-## ✅ Medidas de Segurança Implementadas
+## âœ… Medidas de SeguranÃ§a Implementadas
 
-### 1. Proteção de Dados Sensíveis
+### 1. ProteÃ§Ã£o de Dados SensÃ­veis
 
 #### API Keys
-- ✅ **Nunca expostas no código**: Todas as chaves estão em variáveis de ambiente
-- ✅ **Arquivo .env no .gitignore**: Não são commitadas no repositório
-- ✅ **Validação de existência**: Sistema verifica se a chave está configurada antes de usar
+- âœ… **Nunca expostas no cÃ³digo**: Todas as chaves estÃ£o em variÃ¡veis de ambiente
+- âœ… **Arquivo .env no .gitignore**: NÃ£o sÃ£o commitadas no repositÃ³rio
+- âœ… **ValidaÃ§Ã£o de existÃªncia**: Sistema verifica se a chave estÃ¡ configurada antes de usar
 
 ```typescript
 // src/services/blackcat.ts
-const apiKey = import.meta.env.VITE_BLACKCAT_API_KEY;
+const apiKey = import.meta.env.PAYMENT_API_KEY;
 if (!apiKey) {
-  throw new Error('Black Cat Payments não foi inicializado');
+  throw new Error('Black Cat Payments nÃ£o foi inicializado');
 }
 ```
 
-#### Dados de Cartão
-- ✅ **Validação de Luhn**: Algoritmo implementado para validar número de cartão
-- ✅ **Sanitização**: Remoção de espaços e caracteres especiais antes de enviar
-- ✅ **Não armazenados**: Dados do cartão nunca são salvos localmente
-- ✅ **HTTPS obrigatório**: Comunicação criptografada com API
+#### Dados de CartÃ£o
+- âœ… **ValidaÃ§Ã£o de Luhn**: Algoritmo implementado para validar nÃºmero de cartÃ£o
+- âœ… **SanitizaÃ§Ã£o**: RemoÃ§Ã£o de espaÃ§os e caracteres especiais antes de enviar
+- âœ… **NÃ£o armazenados**: Dados do cartÃ£o nunca sÃ£o salvos localmente
+- âœ… **HTTPS obrigatÃ³rio**: ComunicaÃ§Ã£o criptografada com API
 
 ```typescript
-// Validação de cartão
+// ValidaÃ§Ã£o de cartÃ£o
 private validateCardNumber(cardNumber: string): boolean {
   const digits = cardNumber.replace(/\s/g, '');
   // Algoritmo de Luhn implementado
 }
 ```
 
-### 2. Validação de CPF
+### 2. ValidaÃ§Ã£o de CPF
 
-- ✅ **Algoritmo completo**: Validação dos dois dígitos verificadores
-- ✅ **Rejeita sequências**: CPFs como 111.111.111-11 são rejeitados
-- ✅ **Formatação automática**: Máscara aplicada no input
+- âœ… **Algoritmo completo**: ValidaÃ§Ã£o dos dois dÃ­gitos verificadores
+- âœ… **Rejeita sequÃªncias**: CPFs como 111.111.111-11 sÃ£o rejeitados
+- âœ… **FormataÃ§Ã£o automÃ¡tica**: MÃ¡scara aplicada no input
 
 ```typescript
-// Validação de CPF
+// ValidaÃ§Ã£o de CPF
 private validateCPF(cpf: string): boolean {
   cpf = cpf.replace(/\D/g, '');
   if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
     return false;
   }
-  // Validação dos dígitos verificadores
+  // ValidaÃ§Ã£o dos dÃ­gitos verificadores
 }
 ```
 
-### 3. Autenticação e Autorização
+### 3. AutenticaÃ§Ã£o e AutorizaÃ§Ã£o
 
 #### Sistema de Login
-- ✅ **Persistência segura**: Dados salvos no localStorage com Zustand
-- ✅ **Verificação de sessão**: Checagem em todas as rotas protegidas
-- ✅ **Logout limpo**: Remove todos os dados da sessão
+- âœ… **PersistÃªncia segura**: Dados salvos no localStorage com Zustand
+- âœ… **VerificaÃ§Ã£o de sessÃ£o**: Checagem em todas as rotas protegidas
+- âœ… **Logout limpo**: Remove todos os dados da sessÃ£o
 
 ```typescript
 // src/app/stores/auth.ts
@@ -70,10 +70,10 @@ export const useAuthStore = create<AuthState>()(
 );
 ```
 
-#### Proteção de Rotas
-- ✅ **Dashboard protegido**: Apenas admins podem acessar
-- ✅ **Redirecionamento automático**: Usuários não autorizados são redirecionados
-- ✅ **Verificação de role**: Sistema de permissões por tipo de usuário
+#### ProteÃ§Ã£o de Rotas
+- âœ… **Dashboard protegido**: Apenas admins podem acessar
+- âœ… **Redirecionamento automÃ¡tico**: UsuÃ¡rios nÃ£o autorizados sÃ£o redirecionados
+- âœ… **VerificaÃ§Ã£o de role**: Sistema de permissÃµes por tipo de usuÃ¡rio
 
 ```typescript
 // src/app/pages/DashboardPage.tsx
@@ -83,16 +83,16 @@ if (!isAuthenticated || user?.role !== 'admin') {
 }
 ```
 
-### 4. Sanitização de Inputs
+### 4. SanitizaÃ§Ã£o de Inputs
 
-#### Máscaras de Entrada
-- ✅ **CPF**: 000.000.000-00
-- ✅ **Telefone**: (00) 00000-0000
-- ✅ **CEP**: 00000-000
-- ✅ **Cartão**: 0000 0000 0000 0000
+#### MÃ¡scaras de Entrada
+- âœ… **CPF**: 000.000.000-00
+- âœ… **Telefone**: (00) 00000-0000
+- âœ… **CEP**: 00000-000
+- âœ… **CartÃ£o**: 0000 0000 0000 0000
 
 ```typescript
-// Exemplo de máscara de CPF
+// Exemplo de mÃ¡scara de CPF
 const formatCPF = (value: string) => {
   return value
     .replace(/\D/g, '')
@@ -104,19 +104,19 @@ const formatCPF = (value: string) => {
 ```
 
 #### Limpeza de Dados
-- ✅ **Remoção de caracteres especiais**: Antes de enviar para API
-- ✅ **Validação de formato**: Verificação de padrões esperados
-- ✅ **Prevenção de XSS**: React escapa automaticamente strings
+- âœ… **RemoÃ§Ã£o de caracteres especiais**: Antes de enviar para API
+- âœ… **ValidaÃ§Ã£o de formato**: VerificaÃ§Ã£o de padrÃµes esperados
+- âœ… **PrevenÃ§Ã£o de XSS**: React escapa automaticamente strings
 
 ### 5. Gerenciamento de Estado
 
-#### Zustand com Persistência
-- ✅ **Dados do carrinho salvos**: Não se perdem ao recarregar
-- ✅ **Autenticação persistente**: Usuário permanece logado
-- ✅ **Produtos em cache**: Melhor performance
+#### Zustand com PersistÃªncia
+- âœ… **Dados do carrinho salvos**: NÃ£o se perdem ao recarregar
+- âœ… **AutenticaÃ§Ã£o persistente**: UsuÃ¡rio permanece logado
+- âœ… **Produtos em cache**: Melhor performance
 
 ```typescript
-// Persistência configurada
+// PersistÃªncia configurada
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
@@ -128,12 +128,12 @@ export const useCartStore = create<CartState>()(
 );
 ```
 
-### 6. Comunicação com API
+### 6. ComunicaÃ§Ã£o com API
 
 #### Axios Interceptors
-- ✅ **Autenticação automática**: Bearer token adicionado em todas as requisições
-- ✅ **Tratamento de erros**: Logs e mensagens amigáveis
-- ✅ **Timeout configurado**: 30 segundos para evitar travamentos
+- âœ… **AutenticaÃ§Ã£o automÃ¡tica**: Bearer token adicionado em todas as requisiÃ§Ãµes
+- âœ… **Tratamento de erros**: Logs e mensagens amigÃ¡veis
+- âœ… **Timeout configurado**: 30 segundos para evitar travamentos
 
 ```typescript
 // src/services/blackcat.ts
@@ -147,7 +147,7 @@ this.client.interceptors.request.use(
 
 ---
 
-## 🛡️ Boas Práticas de Segurança
+## ðŸ›¡ï¸ Boas PrÃ¡ticas de SeguranÃ§a
 
 ### Para Desenvolvimento
 
@@ -159,114 +159,114 @@ this.client.interceptors.request.use(
    .env.production
    ```
 
-2. **Use variáveis de ambiente diferentes por ambiente**
+2. **Use variÃ¡veis de ambiente diferentes por ambiente**
    ```env
    # Desenvolvimento
    VITE_BLACKCAT_ENV=sandbox
    
-   # Produção
+   # ProduÃ§Ã£o
    VITE_BLACKCAT_ENV=production
    ```
 
-3. **Mantenha dependências atualizadas**
+3. **Mantenha dependÃªncias atualizadas**
    ```bash
    npm audit
    npm update
    ```
 
-### Para Produção
+### Para ProduÃ§Ã£o
 
-1. **HTTPS Obrigatório**
+1. **HTTPS ObrigatÃ³rio**
    - Configure SSL/TLS no servidor
    - Redirecione HTTP para HTTPS
-   - Use certificados válidos
+   - Use certificados vÃ¡lidos
 
-2. **Variáveis de Ambiente Seguras**
-   - Use serviços como Vercel, Netlify ou AWS Secrets Manager
-   - Nunca exponha chaves no código
+2. **VariÃ¡veis de Ambiente Seguras**
+   - Use serviÃ§os como Vercel, Netlify ou AWS Secrets Manager
+   - Nunca exponha chaves no cÃ³digo
    - Rotacione chaves periodicamente
 
 3. **Monitoramento**
-   - Configure logs de transações
-   - Monitore tentativas de acesso não autorizado
+   - Configure logs de transaÃ§Ãµes
+   - Monitore tentativas de acesso nÃ£o autorizado
    - Alerte sobre erros de pagamento
 
 4. **Backup**
-   - Faça backup regular dos dados
-   - Teste restauração de backup
+   - FaÃ§a backup regular dos dados
+   - Teste restauraÃ§Ã£o de backup
    - Mantenha backups em local seguro
 
 ---
 
-## 🔍 Checklist de Segurança
+## ðŸ” Checklist de SeguranÃ§a
 
 ### Antes do Deploy
 
-- [ ] Arquivo .env não está no repositório
-- [ ] API Keys de produção configuradas
+- [ ] Arquivo .env nÃ£o estÃ¡ no repositÃ³rio
+- [ ] API Keys de produÃ§Ã£o configuradas
 - [ ] HTTPS configurado no servidor
-- [ ] Certificado SSL válido
+- [ ] Certificado SSL vÃ¡lido
 - [ ] Testes de pagamento realizados
-- [ ] Validações de formulário funcionando
+- [ ] ValidaÃ§Ãµes de formulÃ¡rio funcionando
 - [ ] Rotas protegidas testadas
 - [ ] Logs de erro configurados
 
-### Manutenção Contínua
+### ManutenÃ§Ã£o ContÃ­nua
 
-- [ ] Atualizar dependências mensalmente
+- [ ] Atualizar dependÃªncias mensalmente
 - [ ] Revisar logs de erro semanalmente
 - [ ] Testar fluxo de pagamento mensalmente
-- [ ] Verificar certificado SSL (renovação)
+- [ ] Verificar certificado SSL (renovaÃ§Ã£o)
 - [ ] Rotacionar API Keys a cada 6 meses
 - [ ] Fazer backup dos dados semanalmente
 
 ---
 
-## 🚨 O Que NÃO Fazer
+## ðŸš¨ O Que NÃƒO Fazer
 
-### ❌ Nunca faça isso:
+### âŒ Nunca faÃ§a isso:
 
-1. **Não exponha API Keys no código**
+1. **NÃ£o exponha API Keys no cÃ³digo**
    ```typescript
-   // ❌ ERRADO
+   // âŒ ERRADO
    const apiKey = "sk_live_123456789";
    
-   // ✅ CORRETO
-   const apiKey = import.meta.env.VITE_BLACKCAT_API_KEY;
+   // âœ… CORRETO
+   const apiKey = import.meta.env.PAYMENT_API_KEY;
    ```
 
-2. **Não armazene dados sensíveis no localStorage**
+2. **NÃ£o armazene dados sensÃ­veis no localStorage**
    ```typescript
-   // ❌ ERRADO
+   // âŒ ERRADO
    localStorage.setItem('cardNumber', '1234567890123456');
    
-   // ✅ CORRETO
-   // Nunca armazene dados de cartão
+   // âœ… CORRETO
+   // Nunca armazene dados de cartÃ£o
    ```
 
-3. **Não desabilite validações**
+3. **NÃ£o desabilite validaÃ§Ãµes**
    ```typescript
-   // ❌ ERRADO
-   if (true) { // Pula validação
+   // âŒ ERRADO
+   if (true) { // Pula validaÃ§Ã£o
      processPayment();
    }
    
-   // ✅ CORRETO
+   // âœ… CORRETO
    if (validateCPF(cpf) && validateCard(card)) {
      processPayment();
    }
    ```
 
-4. **Não ignore erros de API**
+4. **NÃ£o ignore erros de API**
    ```typescript
-   // ❌ ERRADO
+   // âŒ ERRADO
    try {
      await api.post('/payment');
    } catch (error) {
      // Ignora erro
    }
    
-   // ✅ CORRETO
+   // âœ… CORRETO
    try {
      await api.post('/payment');
    } catch (error) {
@@ -277,37 +277,38 @@ this.client.interceptors.request.use(
 
 ---
 
-## 📞 Suporte de Segurança
+## ðŸ“ž Suporte de SeguranÃ§a
 
 **Encontrou uma vulnerabilidade?**
 - Reporte imediatamente para: security@pneustore.com.br
-- Não divulgue publicamente antes da correção
-- Aguarde confirmação da equipe
+- NÃ£o divulgue publicamente antes da correÃ§Ã£o
+- Aguarde confirmaÃ§Ã£o da equipe
 
-**Dúvidas sobre segurança?**
-- Consulte a documentação do Black Cat: https://docs.blackcatpagamentos.online/security
+**DÃºvidas sobre seguranÃ§a?**
+- Consulte a documentaÃ§Ã£o do Black Cat: https://docs.blackcatpagamentos.online/security
 - Entre em contato com o suporte: suporte@blackcatpagamentos.online
 
 ---
 
-## 🎓 Recursos Adicionais
+## ðŸŽ“ Recursos Adicionais
 
-### Documentação Recomendada
+### DocumentaÃ§Ã£o Recomendada
 
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [PCI DSS Compliance](https://www.pcisecuritystandards.org/)
 - [React Security Best Practices](https://reactjs.org/docs/security.html)
 - [Black Cat Security Docs](https://docs.blackcatpagamentos.online/security)
 
-### Ferramentas de Segurança
+### Ferramentas de SeguranÃ§a
 
-- **npm audit**: Verifica vulnerabilidades em dependências
-- **Snyk**: Monitoramento contínuo de segurança
-- **HTTPS Checker**: Valida configuração SSL
-- **Lighthouse**: Auditoria de segurança e performance
+- **npm audit**: Verifica vulnerabilidades em dependÃªncias
+- **Snyk**: Monitoramento contÃ­nuo de seguranÃ§a
+- **HTTPS Checker**: Valida configuraÃ§Ã£o SSL
+- **Lighthouse**: Auditoria de seguranÃ§a e performance
 
 ---
 
-**Segurança é prioridade! 🔒**
+**SeguranÃ§a Ã© prioridade! ðŸ”’**
 
-*Mantenha seu sistema e seus clientes protegidos seguindo estas práticas.*
+*Mantenha seu sistema e seus clientes protegidos seguindo estas prÃ¡ticas.*
+

@@ -1,18 +1,18 @@
-# ⚡ Quick Start - PneuStore
+﻿# âš¡ Quick Start - PneuStore
 
 Comece a vender pneus em 5 minutos!
 
 ---
 
-## 🚀 Início Rápido
+## ðŸš€ InÃ­cio RÃ¡pido
 
-### 1️⃣ Instalar Dependências
+### 1ï¸âƒ£ Instalar DependÃªncias
 
 ```bash
 npm install
 ```
 
-### 2️⃣ Configurar API Black Cat
+### 2ï¸âƒ£ Configurar API Black Cat
 
 Crie o arquivo `.env` na raiz do projeto:
 
@@ -23,43 +23,43 @@ cp .env.example .env
 Edite o `.env` e adicione sua chave:
 
 ```env
-VITE_BLACKCAT_API_KEY=sua_chave_aqui
+PAYMENT_API_KEY=sua_chave_aqui
 VITE_BLACKCAT_ENV=production
 ```
 
-**🔑 Como obter a chave:**
+**ðŸ”‘ Como obter a chave:**
 1. Acesse: https://painel.blackcatpagamentos.online/
-2. Faça login ou crie uma conta gratuita
-3. Vá em **Configurações → API Keys**
+2. FaÃ§a login ou crie uma conta gratuita
+3. VÃ¡ em **ConfiguraÃ§Ãµes â†’ API Keys**
 4. Copie a chave e cole no arquivo `.env`
 
-### 3️⃣ Iniciar o Projeto
+### 3ï¸âƒ£ Iniciar o Projeto
 
 ```bash
 npm run dev
 ```
 
-Acesse: **http://localhost:5173** 🎉
+Acesse: **http://localhost:5173** ðŸŽ‰
 
 ---
 
-## 📖 Estrutura Básica
+## ðŸ“– Estrutura BÃ¡sica
 
-### Páginas Disponíveis
+### PÃ¡ginas DisponÃ­veis
 
-| Rota | Descrição | Acesso |
+| Rota | DescriÃ§Ã£o | Acesso |
 |------|-----------|--------|
-| `/` | Homepage com busca de pneus | Público |
-| `/products` | Catálogo completo com filtros | Público |
-| `/cart` | Carrinho de compras | Público |
-| `/checkout` | Finalização de compra | Autenticado |
-| `/login` | Login de usuários | Público |
-| `/register` | Cadastro de novos usuários | Público |
+| `/` | Homepage com busca de pneus | PÃºblico |
+| `/products` | CatÃ¡logo completo com filtros | PÃºblico |
+| `/cart` | Carrinho de compras | PÃºblico |
+| `/checkout` | FinalizaÃ§Ã£o de compra | Autenticado |
+| `/login` | Login de usuÃ¡rios | PÃºblico |
+| `/register` | Cadastro de novos usuÃ¡rios | PÃºblico |
 | `/account` | Dados da conta | Autenticado |
-| `/orders` | Histórico de pedidos | Autenticado |
+| `/orders` | HistÃ³rico de pedidos | Autenticado |
 | `/dashboard` | Painel administrativo | Admin |
 
-### Credenciais Padrão
+### Credenciais PadrÃ£o
 
 **Admin (Dashboard):**
 - Email: `admin@pneustore.com`
@@ -71,57 +71,57 @@ Acesse: **http://localhost:5173** 🎉
 - Senha: `cliente123`
 - Role: `user`
 
-> ⚠️ **Importante:** Altere estas credenciais em produção!
+> âš ï¸ **Importante:** Altere estas credenciais em produÃ§Ã£o!
 
 ---
 
-## 🎯 Principais Funcionalidades
+## ðŸŽ¯ Principais Funcionalidades
 
 ### Para Clientes
 
-✅ **Busca de Pneus**
+âœ… **Busca de Pneus**
 - Por medida (largura, perfil, aro)
 - Por marca
-- Por categoria de veículo
+- Por categoria de veÃ­culo
 
-✅ **Filtros Avançados**
-- Largura, perfil, diâmetro
+âœ… **Filtros AvanÃ§ados**
+- Largura, perfil, diÃ¢metro
 - Marca e modelo
-- Faixa de preço
+- Faixa de preÃ§o
 - Run Flat e temporada
 
-✅ **Carrinho Inteligente**
+âœ… **Carrinho Inteligente**
 - Adicionar/remover produtos
 - Atualizar quantidades
-- Persistência de dados
+- PersistÃªncia de dados
 
-✅ **Checkout Completo**
+âœ… **Checkout Completo**
 - 3 formas de pagamento:
-  - 💳 Cartão de Crédito (12x sem juros)
-  - 📱 PIX (aprovação instantânea)
-  - 🎫 Boleto (vencimento 3 dias)
+  - ðŸ’³ CartÃ£o de CrÃ©dito (12x sem juros)
+  - ðŸ“± PIX (aprovaÃ§Ã£o instantÃ¢nea)
+  - ðŸŽ« Boleto (vencimento 3 dias)
 
 ### Para Administradores
 
-✅ **Dashboard**
-- Estatísticas em tempo real
+âœ… **Dashboard**
+- EstatÃ­sticas em tempo real
 - Produtos com estoque baixo
 - Resumo de vendas
 
-✅ **Gerenciar Produtos**
+âœ… **Gerenciar Produtos**
 - Adicionar novos pneus
-- Editar informações
+- Editar informaÃ§Ãµes
 - Controlar estoque
-- Definir preços e promoções
+- Definir preÃ§os e promoÃ§Ãµes
 
-✅ **Configurações**
+âœ… **ConfiguraÃ§Ãµes**
 - Dados da loja
 - API Keys
-- Informações de contato
+- InformaÃ§Ãµes de contato
 
 ---
 
-## 🛒 Testando a Loja
+## ðŸ›’ Testando a Loja
 
 ### 1. Buscar Pneu
 
@@ -131,33 +131,33 @@ Acesse: **http://localhost:5173** 🎉
 
 ### 2. Adicionar ao Carrinho
 
-1. Navegue até `/products`
+1. Navegue atÃ© `/products`
 2. Escolha um pneu
 3. Selecione a quantidade
 4. Clique em "Adicionar"
 
 ### 3. Finalizar Compra
 
-1. Vá para o carrinho
+1. VÃ¡ para o carrinho
 2. Clique em "Finalizar Compra"
-3. Faça login ou cadastre-se
+3. FaÃ§a login ou cadastre-se
 4. Preencha os dados
 5. Escolha a forma de pagamento
 6. Confirme a compra
 
 ### 4. Acessar Dashboard (Admin)
 
-1. Faça login com credenciais de admin
+1. FaÃ§a login com credenciais de admin
 2. Acesse `/dashboard`
-3. Gerencie produtos e veja estatísticas
+3. Gerencie produtos e veja estatÃ­sticas
 
 ---
 
-## 💳 Testando Pagamentos
+## ðŸ’³ Testando Pagamentos
 
 ### Ambiente Sandbox
 
-Para testar pagamentos sem cobranças reais:
+Para testar pagamentos sem cobranÃ§as reais:
 
 ```env
 VITE_BLACKCAT_ENV=sandbox
@@ -165,17 +165,17 @@ VITE_BLACKCAT_ENV=sandbox
 
 ### Dados de Teste
 
-**Cartão Aprovado:**
+**CartÃ£o Aprovado:**
 ```
-Número: 4111 1111 1111 1111
+NÃºmero: 4111 1111 1111 1111
 Nome: TESTE APROVADO
 Validade: 12/30
 CVV: 123
 ```
 
-**Cartão Recusado:**
+**CartÃ£o Recusado:**
 ```
-Número: 4000 0000 0000 0002
+NÃºmero: 4000 0000 0000 0002
 Nome: TESTE RECUSADO
 Validade: 12/30
 CVV: 123
@@ -188,7 +188,7 @@ CVV: 123
 
 ---
 
-## 🎨 Personalização Rápida
+## ðŸŽ¨ PersonalizaÃ§Ã£o RÃ¡pida
 
 ### Alterar Cores
 
@@ -208,14 +208,14 @@ Substitua o arquivo `public/logo.png` pela logo da sua loja.
 
 ### Adicionar Produtos
 
-#### Opção 1: Via Dashboard (Recomendado)
-1. Faça login como admin
-2. Acesse Dashboard → Produtos
+#### OpÃ§Ã£o 1: Via Dashboard (Recomendado)
+1. FaÃ§a login como admin
+2. Acesse Dashboard â†’ Produtos
 3. Clique em "Adicionar Produto"
-4. Preencha as informações
+4. Preencha as informaÃ§Ãµes
 5. Salve
 
-#### Opção 2: Via Código
+#### OpÃ§Ã£o 2: Via CÃ³digo
 Edite `/src/app/stores/tires.ts` e adicione no array `mockTires`:
 
 ```typescript
@@ -232,7 +232,7 @@ Edite `/src/app/stores/tires.ts` e adicione no array `mockTires`:
   oldPrice: 649.90,
   stock: 25,
   image: 'https://sua-imagem.jpg',
-  features: ['Esportivo', 'Durável', 'Silencioso'],
+  features: ['Esportivo', 'DurÃ¡vel', 'Silencioso'],
   category: 'passeio',
   season: 'all-season',
   runflat: false,
@@ -243,72 +243,72 @@ Edite `/src/app/stores/tires.ts` e adicione no array `mockTires`:
 
 ---
 
-## 🐛 Problemas Comuns
+## ðŸ› Problemas Comuns
 
-### Erro: "Black Cat Payments não foi inicializado"
+### Erro: "Black Cat Payments nÃ£o foi inicializado"
 
-**Causa:** API Key não configurada
+**Causa:** API Key nÃ£o configurada
 
-**Solução:**
+**SoluÃ§Ã£o:**
 ```bash
 # Verifique se o .env existe
 ls -la .env
 
-# Verifique o conteúdo
+# Verifique o conteÃºdo
 cat .env
 
 # Deve conter:
-VITE_BLACKCAT_API_KEY=sua_chave
+PAYMENT_API_KEY=sua_chave
 ```
 
 ### Erro: "Cannot find module"
 
-**Causa:** Dependências não instaladas
+**Causa:** DependÃªncias nÃ£o instaladas
 
-**Solução:**
+**SoluÃ§Ã£o:**
 ```bash
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-### Página em branco
+### PÃ¡gina em branco
 
 **Causa:** Erro de JavaScript
 
-**Solução:**
+**SoluÃ§Ã£o:**
 1. Abra o Console do navegador (F12)
 2. Verifique os erros
 3. Limpe o cache: `Ctrl + Shift + Del`
 4. Recarregue: `Ctrl + F5`
 
-### Produtos não aparecem
+### Produtos nÃ£o aparecem
 
 **Causa:** LocalStorage corrompido
 
-**Solução:**
+**SoluÃ§Ã£o:**
 ```javascript
 // No Console do navegador (F12):
 localStorage.clear()
-// Recarregue a página
+// Recarregue a pÃ¡gina
 ```
 
 ---
 
-## 📚 Próximos Passos
+## ðŸ“š PrÃ³ximos Passos
 
 ### Desenvolvimento
 
-- [ ] Adicione seus próprios produtos
+- [ ] Adicione seus prÃ³prios produtos
 - [ ] Personalize as cores e logo
 - [ ] Configure os dados da loja
 - [ ] Teste todos os fluxos de pagamento
 
-### Produção
+### ProduÃ§Ã£o
 
-- [ ] Configure um domínio
-- [ ] Configure HTTPS (obrigatório)
-- [ ] Altere as credenciais padrão
-- [ ] Configure backup automático
+- [ ] Configure um domÃ­nio
+- [ ] Configure HTTPS (obrigatÃ³rio)
+- [ ] Altere as credenciais padrÃ£o
+- [ ] Configure backup automÃ¡tico
 - [ ] Ative o monitoramento
 
 ### Marketing
@@ -321,41 +321,42 @@ localStorage.clear()
 
 ---
 
-## 📞 Precisa de Ajuda?
+## ðŸ“ž Precisa de Ajuda?
 
-### Documentação
+### DocumentaÃ§Ã£o
 
 - **README completo**: `README.md`
-- **Guia de implantação**: `DEPLOYMENT.md`
+- **Guia de implantaÃ§Ã£o**: `DEPLOYMENT.md`
 - **Black Cat Docs**: https://docs.blackcatpagamentos.online/
 
 ### Suporte
 
 - **Black Cat**: suporte@blackcatpagamentos.online
-- **Issues**: Crie uma issue no repositório
+- **Issues**: Crie uma issue no repositÃ³rio
 
 ---
 
-## ✅ Checklist de Validação
+## âœ… Checklist de ValidaÃ§Ã£o
 
-Antes de começar a vender, verifique:
+Antes de comeÃ§ar a vender, verifique:
 
 - [ ] Projeto roda localmente (`npm run dev`)
 - [ ] API Black Cat configurada
 - [ ] Pode adicionar produtos ao carrinho
 - [ ] Checkout processa pagamentos
-- [ ] Dashboard acessível
+- [ ] Dashboard acessÃ­vel
 - [ ] Responsive em mobile
-- [ ] Todas as páginas carregam sem erros
+- [ ] Todas as pÃ¡ginas carregam sem erros
 
 ---
 
-## 🎉 Pronto para Vender!
+## ðŸŽ‰ Pronto para Vender!
 
-Parabéns! Sua loja está configurada e pronta para começar a vender pneus online.
+ParabÃ©ns! Sua loja estÃ¡ configurada e pronta para comeÃ§ar a vender pneus online.
 
-**Boas vendas! 🚀💰**
+**Boas vendas! ðŸš€ðŸ’°**
 
 ---
 
-*Última atualização: Fevereiro 2024*
+*Ãšltima atualizaÃ§Ã£o: Fevereiro 2024*
+

@@ -1,84 +1,84 @@
-# 🚗 PneuStore - Plataforma E-commerce para Vendas de Pneus
+﻿# ðŸš— PneuStore - Plataforma E-commerce para Vendas de Pneus
 
-Sistema completo de e-commerce especializado em vendas de pneus, com integração de pagamento **Black Cat Payments**, painel administrativo completo e design responsivo profissional.
+Sistema completo de e-commerce especializado em vendas de pneus, com integraÃ§Ã£o de pagamento **Black Cat Payments**, painel administrativo completo e design responsivo profissional.
 
 ---
 
-## ✨ Funcionalidades Principais
+## âœ¨ Funcionalidades Principais
 
-### 🛒 **Para Clientes**
-- ✅ Busca avançada de pneus (largura, perfil, aro, marca)
-- ✅ Filtros inteligentes por categoria, preço, características
-- ✅ Catálogo completo com detalhes técnicos
-- ✅ Carrinho de compras persistente
-- ✅ Checkout integrado com 3 formas de pagamento:
-  - **Cartão de Crédito** (até 12x sem juros)
-  - **PIX** (QR Code instantâneo)
-  - **Boleto Bancário** (vencimento em 3 dias)
-- ✅ Sistema de autenticação seguro
-- ✅ Histórico de pedidos
-- ✅ Design responsivo (Mobile, Tablet, Desktop)
+### ðŸ›’ **Para Clientes**
+- âœ… Busca avanÃ§ada de pneus (largura, perfil, aro, marca)
+- âœ… Filtros inteligentes por categoria, preÃ§o, caracterÃ­sticas
+- âœ… CatÃ¡logo completo com detalhes tÃ©cnicos
+- âœ… Carrinho de compras persistente
+- âœ… Checkout integrado com 3 formas de pagamento:
+  - **CartÃ£o de CrÃ©dito** (atÃ© 12x sem juros)
+  - **PIX** (QR Code instantÃ¢neo)
+  - **Boleto BancÃ¡rio** (vencimento em 3 dias)
+- âœ… Sistema de autenticaÃ§Ã£o seguro
+- âœ… HistÃ³rico de pedidos
+- âœ… Design responsivo (Mobile, Tablet, Desktop)
 
-### 🔐 **Para Administradores**
-- ✅ Dashboard com estatísticas em tempo real
-- ✅ Gerenciamento completo de produtos:
+### ðŸ” **Para Administradores**
+- âœ… Dashboard com estatÃ­sticas em tempo real
+- âœ… Gerenciamento completo de produtos:
   - Adicionar novos pneus
-  - Editar informações
+  - Editar informaÃ§Ãµes
   - Controle de estoque
-  - Preços e promoções
-- ✅ Configurações da loja
-- ✅ Acesso protegido por autenticação
+  - PreÃ§os e promoÃ§Ãµes
+- âœ… ConfiguraÃ§Ãµes da loja
+- âœ… Acesso protegido por autenticaÃ§Ã£o
 
 ---
 
-## 🎨 Design e UX
+## ðŸŽ¨ Design e UX
 
 - **Cores Profissionais**: Laranja (#FF6B35), Azul (#004E89), Amarelo (#F7B801)
-- **Layout Moderno**: Cards com sombras, animações suaves
+- **Layout Moderno**: Cards com sombras, animaÃ§Ãµes suaves
 - **Responsividade Total**: Funciona perfeitamente em todos os dispositivos
-- **Acessibilidade**: Estrutura semântica e navegação intuitiva
+- **Acessibilidade**: Estrutura semÃ¢ntica e navegaÃ§Ã£o intuitiva
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## ðŸ› ï¸ Tecnologias Utilizadas
 
-| Tecnologia | Versão | Uso |
+| Tecnologia | VersÃ£o | Uso |
 |------------|--------|-----|
 | **React** | 18.3.1 | Framework principal |
-| **TypeScript** | Latest | Tipagem estática |
+| **TypeScript** | Latest | Tipagem estÃ¡tica |
 | **Vite** | 6.3.5 | Build tool |
 | **React Router** | 7.13.0 | Roteamento |
 | **Zustand** | 5.0.11 | Gerenciamento de estado |
-| **Tailwind CSS** | 4.1.12 | Estilização |
-| **Lucide React** | Latest | Ícones |
-| **Axios** | Latest | Requisições HTTP |
+| **Tailwind CSS** | 4.1.12 | EstilizaÃ§Ã£o |
+| **Lucide React** | Latest | Ãcones |
+| **Axios** | Latest | RequisiÃ§Ãµes HTTP |
 | **Black Cat Payments** | API v1 | Gateway de pagamento |
 
 ---
 
-## 📦 Instalação e Configuração
+## ðŸ“¦ InstalaÃ§Ã£o e ConfiguraÃ§Ã£o
 
-### 1. Pré-requisitos
+### 1. PrÃ©-requisitos
 ```bash
 Node.js >= 18.0.0
 npm ou pnpm
 ```
 
-### 2. Instalar Dependências
+### 2. Instalar DependÃªncias
 ```bash
 npm install
 ```
 
-### 3. Configurar Variáveis de Ambiente
+### 3. Configurar VariÃ¡veis de Ambiente
 
 Crie um arquivo `.env` na raiz do projeto:
 
 ```env
 # Black Cat Payments
-VITE_BLACKCAT_API_KEY=sua_chave_aqui
+PAYMENT_API_KEY=sua_chave_aqui
 VITE_BLACKCAT_ENV=production
 
-# Informações da Loja (opcional)
+# InformaÃ§Ãµes da Loja (opcional)
 VITE_STORE_NAME=PneuStore
 VITE_STORE_CNPJ=00.000.000/0000-00
 VITE_STORE_PHONE=(11) 99999-9999
@@ -87,8 +87,8 @@ VITE_STORE_EMAIL=contato@pneustore.com.br
 
 **Como obter a chave da API Black Cat:**
 1. Acesse: https://painel.blackcatpagamentos.online/
-2. Faça login ou crie uma conta
-3. Vá em **Configurações → API Keys**
+2. FaÃ§a login ou crie uma conta
+3. VÃ¡ em **ConfiguraÃ§Ãµes â†’ API Keys**
 4. Copie sua chave e cole no `.env`
 
 ### 4. Iniciar o Projeto
@@ -98,101 +98,101 @@ npm run dev
 
 Acesse: http://localhost:5173
 
-### 5. Build para Produção
+### 5. Build para ProduÃ§Ã£o
 ```bash
 npm run build
 ```
 
-Os arquivos otimizados estarão em `dist/`
+Os arquivos otimizados estarÃ£o em `dist/`
 
 ---
 
-## 📁 Estrutura do Projeto
+## ðŸ“ Estrutura do Projeto
 
 ```
 src/
-├── app/
-│   ├── components/           # Componentes reutilizáveis
-│   │   ├── Navbar.tsx        # Menu de navegação
-│   │   ├── Footer.tsx        # Rodapé
-│   │   ├── TireCard.tsx      # Card de pneu
-│   │   └── ui/               # Componentes UI
-│   ├── pages/                # Páginas da aplicação
-│   │   ├── HomePage.tsx      # Página inicial
-│   │   ├── ProductsPage.tsx  # Catálogo de pneus
-│   │   ├── CheckoutPage.tsx  # Finalização de compra
-│   │   ├── CartPage.tsx      # Carrinho de compras
-│   │   ├── DashboardPage.tsx # Painel administrativo
-│   │   ├── LoginPage.tsx     # Login
-│   │   ├── RegisterPage.tsx  # Cadastro
-│   │   ├── AccountPage.tsx   # Conta do usuário
-│   │   └── OrdersPage.tsx    # Pedidos
-│   ├── stores/               # Gerenciamento de estado
-│   │   ├── tires.ts          # Store de pneus
-│   │   ├── cart.ts           # Store do carrinho
-│   │   └── auth.ts           # Store de autenticação
-│   └── App.tsx               # Componente raiz
-├── services/
-│   └── blackcat.ts           # Integração Black Cat Payments
-└── styles/                   # Estilos globais
-    ├── index.css
-    ├── theme.css
-    └── fonts.css
+â”œâ”€â”€ app/
+â”‚   â”œâ”€â”€ components/           # Componentes reutilizÃ¡veis
+â”‚   â”‚   â”œâ”€â”€ Navbar.tsx        # Menu de navegaÃ§Ã£o
+â”‚   â”‚   â”œâ”€â”€ Footer.tsx        # RodapÃ©
+â”‚   â”‚   â”œâ”€â”€ TireCard.tsx      # Card de pneu
+â”‚   â”‚   â””â”€â”€ ui/               # Componentes UI
+â”‚   â”œâ”€â”€ pages/                # PÃ¡ginas da aplicaÃ§Ã£o
+â”‚   â”‚   â”œâ”€â”€ HomePage.tsx      # PÃ¡gina inicial
+â”‚   â”‚   â”œâ”€â”€ ProductsPage.tsx  # CatÃ¡logo de pneus
+â”‚   â”‚   â”œâ”€â”€ CheckoutPage.tsx  # FinalizaÃ§Ã£o de compra
+â”‚   â”‚   â”œâ”€â”€ CartPage.tsx      # Carrinho de compras
+â”‚   â”‚   â”œâ”€â”€ DashboardPage.tsx # Painel administrativo
+â”‚   â”‚   â”œâ”€â”€ LoginPage.tsx     # Login
+â”‚   â”‚   â”œâ”€â”€ RegisterPage.tsx  # Cadastro
+â”‚   â”‚   â”œâ”€â”€ AccountPage.tsx   # Conta do usuÃ¡rio
+â”‚   â”‚   â””â”€â”€ OrdersPage.tsx    # Pedidos
+â”‚   â”œâ”€â”€ stores/               # Gerenciamento de estado
+â”‚   â”‚   â”œâ”€â”€ tires.ts          # Store de pneus
+â”‚   â”‚   â”œâ”€â”€ cart.ts           # Store do carrinho
+â”‚   â”‚   â””â”€â”€ auth.ts           # Store de autenticaÃ§Ã£o
+â”‚   â””â”€â”€ App.tsx               # Componente raiz
+â”œâ”€â”€ services/
+â”‚   â””â”€â”€ blackcat.ts           # IntegraÃ§Ã£o Black Cat Payments
+â””â”€â”€ styles/                   # Estilos globais
+    â”œâ”€â”€ index.css
+    â”œâ”€â”€ theme.css
+    â””â”€â”€ fonts.css
 ```
 
 ---
 
-## 🔐 Segurança Implementada
+## ðŸ” SeguranÃ§a Implementada
 
-### ✅ Proteções de Segurança
+### âœ… ProteÃ§Ãµes de SeguranÃ§a
 
-1. **Validação de CPF**: Algoritmo de validação completo
-2. **Validação de Cartão**: Algoritmo de Luhn implementado
+1. **ValidaÃ§Ã£o de CPF**: Algoritmo de validaÃ§Ã£o completo
+2. **ValidaÃ§Ã£o de CartÃ£o**: Algoritmo de Luhn implementado
 3. **Hash de Tokens**: API Keys nunca expostas no frontend
-4. **Autenticação Segura**: Sistema de login protegido
-5. **Sanitização de Dados**: Limpeza de inputs antes de enviar
-6. **HTTPS Obrigatório**: Comunicação criptografada com API
-7. **Proteção de Rotas**: Dashboard acessível apenas para admins
+4. **AutenticaÃ§Ã£o Segura**: Sistema de login protegido
+5. **SanitizaÃ§Ã£o de Dados**: Limpeza de inputs antes de enviar
+6. **HTTPS ObrigatÃ³rio**: ComunicaÃ§Ã£o criptografada com API
+7. **ProteÃ§Ã£o de Rotas**: Dashboard acessÃ­vel apenas para admins
 
-### 🛡️ Boas Práticas
+### ðŸ›¡ï¸ Boas PrÃ¡ticas
 
-- **Sem exposição de IDs sensíveis**: IDs internos não são expostos na URL
-- **Máscaras de entrada**: CPF, telefone, CEP formatados automaticamente
-- **Validação client-side e server-side**: Dupla camada de validação
-- **Timeout de sessão**: Sessões expiram após inatividade
-- **Logs de auditoria**: Todas as transações são registradas
+- **Sem exposiÃ§Ã£o de IDs sensÃ­veis**: IDs internos nÃ£o sÃ£o expostos na URL
+- **MÃ¡scaras de entrada**: CPF, telefone, CEP formatados automaticamente
+- **ValidaÃ§Ã£o client-side e server-side**: Dupla camada de validaÃ§Ã£o
+- **Timeout de sessÃ£o**: SessÃµes expiram apÃ³s inatividade
+- **Logs de auditoria**: Todas as transaÃ§Ãµes sÃ£o registradas
 
 ---
 
-## 💳 Integração Black Cat Payments
+## ðŸ’³ IntegraÃ§Ã£o Black Cat Payments
 
-### Métodos de Pagamento
+### MÃ©todos de Pagamento
 
-#### 1. Cartão de Crédito
+#### 1. CartÃ£o de CrÃ©dito
 ```typescript
 {
-  number: "4111111111111111",    // Número do cartão
+  number: "4111111111111111",    // NÃºmero do cartÃ£o
   holderName: "NOME DO TITULAR",
   expirationMonth: "12",
   expirationYear: "25",
   cvv: "123",
-  installments: 12               // Até 12x sem juros
+  installments: 12               // AtÃ© 12x sem juros
 }
 ```
 
 #### 2. PIX
 - QR Code gerado automaticamente
-- Código PIX para cópia
-- Expiração configurável
-- Confirmação em tempo real
+- CÃ³digo PIX para cÃ³pia
+- ExpiraÃ§Ã£o configurÃ¡vel
+- ConfirmaÃ§Ã£o em tempo real
 
-#### 3. Boleto Bancário
-- Código de barras digitável
-- Link para visualização
+#### 3. Boleto BancÃ¡rio
+- CÃ³digo de barras digitÃ¡vel
+- Link para visualizaÃ§Ã£o
 - Vencimento em 3 dias
 - Download em PDF
 
-### Documentação Completa
+### DocumentaÃ§Ã£o Completa
 
 - **API Docs**: https://docs.blackcatpagamentos.online/
 - **Painel Admin**: https://painel.blackcatpagamentos.online/
@@ -200,20 +200,20 @@ src/
 
 ---
 
-## 🎯 Como Usar - Guia Rápido
+## ðŸŽ¯ Como Usar - Guia RÃ¡pido
 
 ### Para Clientes
 
 1. **Buscar Pneus**
-   - Use a busca na página inicial
+   - Use a busca na pÃ¡gina inicial
    - Selecione tamanhos populares
    - Ou navegue por categorias
 
 2. **Filtrar Produtos**
    - Largura, Perfil, Aro
    - Marca e Categoria
-   - Faixa de preço
-   - Características especiais
+   - Faixa de preÃ§o
+   - CaracterÃ­sticas especiais
 
 3. **Adicionar ao Carrinho**
    - Escolha a quantidade
@@ -237,48 +237,48 @@ src/
 
 2. **Gerenciar Produtos**
    - Adicione novos pneus
-   - Edite informações
+   - Edite informaÃ§Ãµes
    - Controle estoque
-   - Defina preços e promoções
+   - Defina preÃ§os e promoÃ§Ãµes
 
-3. **Visualizar Estatísticas**
+3. **Visualizar EstatÃ­sticas**
    - Receita total
    - Produtos mais vendidos
    - Estoque baixo
-   - Métricas em tempo real
+   - MÃ©tricas em tempo real
 
 4. **Configurar Loja**
    - Dados da empresa
    - API Keys
-   - Informações de contato
+   - InformaÃ§Ãµes de contato
 
 ---
 
-## 🔄 Fluxo de Dados
+## ðŸ”„ Fluxo de Dados
 
-### Autenticação
+### AutenticaÃ§Ã£o
 ```
-Login → Validação → Store (Zustand) → Persistência (localStorage) → Rotas Protegidas
+Login â†’ ValidaÃ§Ã£o â†’ Store (Zustand) â†’ PersistÃªncia (localStorage) â†’ Rotas Protegidas
 ```
 
 ### Carrinho
 ```
-Adicionar Item → Store (Zustand) → Persistência → Checkout → Pagamento → Confirmação
+Adicionar Item â†’ Store (Zustand) â†’ PersistÃªncia â†’ Checkout â†’ Pagamento â†’ ConfirmaÃ§Ã£o
 ```
 
 ### Produtos
 ```
-Store (tires.ts) → Filtros → Aplicação → Renderização → TireCard
+Store (tires.ts) â†’ Filtros â†’ AplicaÃ§Ã£o â†’ RenderizaÃ§Ã£o â†’ TireCard
 ```
 
 ### Pagamento
 ```
-Dados → Validação → Black Cat API → Resposta → Feedback Visual
+Dados â†’ ValidaÃ§Ã£o â†’ Black Cat API â†’ Resposta â†’ Feedback Visual
 ```
 
 ---
 
-## 📱 Responsividade
+## ðŸ“± Responsividade
 
 ### Breakpoints
 
@@ -288,9 +288,9 @@ Dados → Validação → Black Cat API → Resposta → Feedback Visual
 | **Tablet** | 640px - 1024px | 2 colunas |
 | **Desktop** | > 1024px | 3-4 colunas |
 
-### Otimizações Mobile
+### OtimizaÃ§Ãµes Mobile
 
-- Menu hambúrguer
+- Menu hambÃºrguer
 - Filtros em modal lateral
 - Cards adaptados
 - Imagens otimizadas
@@ -298,36 +298,36 @@ Dados → Validação → Black Cat API → Resposta → Feedback Visual
 
 ---
 
-## 🚀 Performance
+## ðŸš€ Performance
 
-### Otimizações Implementadas
+### OtimizaÃ§Ãµes Implementadas
 
-- ✅ **Lazy Loading**: Componentes carregados sob demanda
-- ✅ **Code Splitting**: Divisão inteligente do código
-- ✅ **Memoization**: Zustand otimizado
-- ✅ **Debounce**: Busca e filtros otimizados
-- ✅ **CSS Otimizado**: Tailwind com purge
-- ✅ **Imagens Otimizadas**: WebP quando possível
+- âœ… **Lazy Loading**: Componentes carregados sob demanda
+- âœ… **Code Splitting**: DivisÃ£o inteligente do cÃ³digo
+- âœ… **Memoization**: Zustand otimizado
+- âœ… **Debounce**: Busca e filtros otimizados
+- âœ… **CSS Otimizado**: Tailwind com purge
+- âœ… **Imagens Otimizadas**: WebP quando possÃ­vel
 
 ---
 
-## 🧪 Testes
+## ðŸ§ª Testes
 
 ### Testar Pagamentos (Ambiente Sandbox)
 
 Use os seguintes dados de teste:
 
-**Cartão de Crédito Aprovado:**
+**CartÃ£o de CrÃ©dito Aprovado:**
 ```
-Número: 4111 1111 1111 1111
+NÃºmero: 4111 1111 1111 1111
 Nome: TESTE APROVADO
 Validade: 12/25
 CVV: 123
 ```
 
-**Cartão de Crédito Recusado:**
+**CartÃ£o de CrÃ©dito Recusado:**
 ```
-Número: 4000 0000 0000 0002
+NÃºmero: 4000 0000 0000 0002
 Nome: TESTE RECUSADO
 Validade: 12/25
 CVV: 123
@@ -340,16 +340,16 @@ CVV: 123
 
 ---
 
-## 🐛 Troubleshooting
+## ðŸ› Troubleshooting
 
-### Erro: "Black Cat Payments não foi inicializado"
+### Erro: "Black Cat Payments nÃ£o foi inicializado"
 
-**Solução:**
+**SoluÃ§Ã£o:**
 ```bash
 # 1. Verifique se o arquivo .env existe
 ls -la .env
 
-# 2. Verifique se a variável está definida
+# 2. Verifique se a variÃ¡vel estÃ¡ definida
 cat .env | grep BLACKCAT
 
 # 3. Reinicie o servidor
@@ -358,47 +358,47 @@ npm run dev
 
 ### Erro: "Failed to fetch"
 
-**Solução:**
-1. Verifique sua conexão com a internet
-2. Confirme se a API Black Cat está online
-3. Verifique se a API Key está correta
+**SoluÃ§Ã£o:**
+1. Verifique sua conexÃ£o com a internet
+2. Confirme se a API Black Cat estÃ¡ online
+3. Verifique se a API Key estÃ¡ correta
 
-### Produtos não aparecem
+### Produtos nÃ£o aparecem
 
-**Solução:**
+**SoluÃ§Ã£o:**
 1. Limpe o cache do navegador
 2. Limpe o localStorage: `localStorage.clear()`
-3. Recarregue a página
+3. Recarregue a pÃ¡gina
 
 ---
 
-## 📝 Próximas Melhorias
+## ðŸ“ PrÃ³ximas Melhorias
 
 - [ ] Sistema de cupons de desconto
 - [ ] Programa de fidelidade
-- [ ] Comparação de produtos
-- [ ] Avaliações e comentários
+- [ ] ComparaÃ§Ã£o de produtos
+- [ ] AvaliaÃ§Ãµes e comentÃ¡rios
 - [ ] Chat de suporte
 - [ ] Wishlist
-- [ ] Cálculo de frete por CEP
-- [ ] Notificações por email
-- [ ] Relatórios avançados no dashboard
+- [ ] CÃ¡lculo de frete por CEP
+- [ ] NotificaÃ§Ãµes por email
+- [ ] RelatÃ³rios avanÃ§ados no dashboard
 - [ ] Multi-idiomas
 
 ---
 
-## 📄 Licença
+## ðŸ“„ LicenÃ§a
 
-Este projeto está sob a licença MIT.
+Este projeto estÃ¡ sob a licenÃ§a MIT.
 
 ---
 
-## 👨💻 Suporte
+## ðŸ‘¨ðŸ’» Suporte
 
-**Dúvidas sobre o projeto?**
-- Consulte a documentação
-- Verifique os exemplos de código
-- Revise os comentários no código
+**DÃºvidas sobre o projeto?**
+- Consulte a documentaÃ§Ã£o
+- Verifique os exemplos de cÃ³digo
+- Revise os comentÃ¡rios no cÃ³digo
 
 **Problemas com Black Cat Payments?**
 - Docs: https://docs.blackcatpagamentos.online/
@@ -406,9 +406,9 @@ Este projeto está sob a licença MIT.
 
 ---
 
-## 🎉 Pronto para Vender!
+## ðŸŽ‰ Pronto para Vender!
 
-Seu sistema está **100% funcional** e pronto para começar a vender pneus online!
+Seu sistema estÃ¡ **100% funcional** e pronto para comeÃ§ar a vender pneus online!
 
 ### Checklist Final
 
@@ -417,10 +417,11 @@ Seu sistema está **100% funcional** e pronto para começar a vender pneus onlin
 - [x] Design responsivo
 - [x] Pagamentos funcionando
 - [x] Dashboard administrativo
-- [x] Segurança implementada
+- [x] SeguranÃ§a implementada
 
-**Boas vendas! 🚀**
+**Boas vendas! ðŸš€**
 
 ---
 
-*Desenvolvido com ❤️ para o mercado de pneus brasileiro*
+*Desenvolvido com â¤ï¸ para o mercado de pneus brasileiro*
+

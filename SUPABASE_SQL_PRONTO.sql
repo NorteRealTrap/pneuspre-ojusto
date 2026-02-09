@@ -1,5 +1,5 @@
 ﻿-- ============================================
--- SUPABASE SQL PRONTO - PNEUS.PRECOJUSTO
+-- SUPABASE SETUP - PNEUS.PRECOJUSTO
 -- PostgreSQL / Supabase SQL Editor
 -- Idempotente: pode rodar mais de uma vez sem quebrar
 -- ============================================
@@ -48,6 +48,36 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'orders_total_positive_chk'
+  ) THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_total_positive_chk CHECK (total > 0);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'orders_payment_method_chk'
+  ) THEN
+    ALTER TABLE orders
+      ADD CONSTRAINT orders_payment_method_chk
+      CHECK (payment_method IN ('credit_card', 'pix', 'boleto'));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'orders_status_chk'
+  ) THEN
+    ALTER TABLE orders
+      ADD CONSTRAINT orders_status_chk
+      CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled'));
+  END IF;
+END
+$$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_payment_id_unique
+  ON orders(payment_id)
+  WHERE payment_id IS NOT NULL;
+
 -- 3. TABELA DE ITENS DO PEDIDO
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -57,6 +87,26 @@ CREATE TABLE IF NOT EXISTS order_items (
   price DECIMAL(10, 2) NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'order_items_quantity_positive_chk'
+  ) THEN
+    ALTER TABLE order_items
+      ADD CONSTRAINT order_items_quantity_positive_chk
+      CHECK (quantity > 0);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'order_items_price_nonnegative_chk'
+  ) THEN
+    ALTER TABLE order_items
+      ADD CONSTRAINT order_items_price_nonnegative_chk
+      CHECK (price >= 0);
+  END IF;
+END
+$$;
 
 -- 4. TABELA DE PERFIS DE USUARIO
 CREATE TABLE IF NOT EXISTS profiles (
@@ -69,6 +119,18 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'profiles_role_chk'
+  ) THEN
+    ALTER TABLE profiles
+      ADD CONSTRAINT profiles_role_chk
+      CHECK (role IN ('client', 'admin'));
+  END IF;
+END
+$$;
 
 -- Normaliza dados legados para evitar conflito de CPF unico com string vazia
 UPDATE profiles SET cpf = NULL WHERE cpf = '';
@@ -243,7 +305,13 @@ CREATE POLICY "Users can view own orders"
 CREATE POLICY "Users can create orders"
   ON orders
   FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id
+    AND status = 'pending'
+    AND payment_id IS NULL
+    AND total > 0
+    AND payment_method IN ('credit_card', 'pix', 'boleto')
+  );
 
 CREATE POLICY "Admins full access orders"
   ON orders
@@ -278,6 +346,8 @@ CREATE POLICY "Users can create own order items"
       WHERE orders.id = order_items.order_id
         AND orders.user_id = auth.uid()
     )
+    AND quantity > 0
+    AND price >= 0
   );
 
 CREATE POLICY "Admins full access order items"

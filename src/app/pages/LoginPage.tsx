@@ -3,9 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Loader, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 import { authService } from '../../services/supabase';
+import { buildApiUrl } from '../../services/apiBase';
 import './Auth.css';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 type AuthLocationState = {
   needsEmailConfirmation?: boolean;
@@ -68,7 +67,7 @@ export function LoginPage() {
 
     const fetchLoginBanner = async () => {
       try {
-        const response = await fetch(`${API_URL}/public/login-banner`);
+        const response = await fetch(buildApiUrl('/public/login-banner'));
 
         if (!response.ok) {
           throw new Error('Nao foi possivel carregar o banner');
