@@ -1,20 +1,97 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const vulnerableByPackage = {
-  "react-server-dom-webpack": new Set(["19.0.0", "19.1.0", "19.1.1", "19.2.0"]),
-  "react-server-dom-parcel": new Set(["19.0.0", "19.1.0", "19.1.1", "19.2.0"]),
-  "react-server-dom-turbopack": new Set(["19.0.0", "19.1.0", "19.1.1", "19.2.0"]),
-};
+const vulnerableRscPackages = new Set([
+  "react-server-dom-webpack",
+  "react-server-dom-parcel",
+  "react-server-dom-turbopack",
+]);
 
-const remediationHint =
-  "Atualize para versoes corrigidas (ex.: 19.0.1+, 19.1.2+ ou 19.2.1+), conforme CVE-2025-55182.";
+const vulnerableRscVersions = new Set(["19.0.0", "19.1.0", "19.1.1", "19.2.0"]);
+
+const packagesToInspect = [...vulnerableRscPackages, "next"];
+
+function parseVersion(version) {
+  const clean = String(version).trim();
+  const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/.exec(clean);
+  if (!match) return null;
+
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3]),
+    pre: match[4] || "",
+  };
+}
+
+function parseCanaryNumber(preRelease) {
+  const match = /^canary\.(\d+)$/i.exec(preRelease);
+  if (!match) return null;
+  return Number(match[1]);
+}
+
+function isVulnerableNext(version) {
+  const parsed = parseVersion(version);
+  if (!parsed) return false;
+
+  const isStable = parsed.pre.length === 0;
+  if (isStable) {
+    if (parsed.major === 15) {
+      if (parsed.minor === 0 && parsed.patch < 5) return true;
+      if (parsed.minor === 1 && parsed.patch < 9) return true;
+      if (parsed.minor === 2 && parsed.patch < 6) return true;
+      if (parsed.minor === 3 && parsed.patch < 6) return true;
+      if (parsed.minor === 4 && parsed.patch < 8) return true;
+      if (parsed.minor === 5 && parsed.patch < 7) return true;
+    }
+
+    if (parsed.major === 16 && parsed.minor === 0 && parsed.patch < 7) return true;
+    return false;
+  }
+
+  const canaryNumber = parseCanaryNumber(parsed.pre);
+  if (canaryNumber === null) return false;
+
+  if (parsed.major === 14 && parsed.minor === 3 && parsed.patch === 0 && canaryNumber >= 77) {
+    return true;
+  }
+
+  if (parsed.major === 15) {
+    if (parsed.minor < 6) return true;
+    if (parsed.minor === 6 && parsed.patch === 0 && canaryNumber < 58) return true;
+    return false;
+  }
+
+  if (parsed.major === 16) {
+    if (parsed.minor < 1) return true;
+    if (parsed.minor === 1 && parsed.patch === 0 && canaryNumber < 12) return true;
+    return false;
+  }
+
+  return false;
+}
 
 function maybePushFinding(findings, pkg, version, location) {
-  const vulnerableVersions = vulnerableByPackage[pkg];
-  if (!vulnerableVersions || !vulnerableVersions.has(version)) return;
+  if (vulnerableRscPackages.has(pkg) && vulnerableRscVersions.has(version)) {
+    findings.push({
+      pkg,
+      version,
+      location,
+      advisory: "CVE-2025-55182",
+      hint: "Atualize react-server-dom-* para 19.0.1+, 19.1.2+ ou 19.2.1+.",
+    });
+    return;
+  }
 
-  findings.push({ pkg, version, location });
+  if (pkg === "next" && isVulnerableNext(version)) {
+    findings.push({
+      pkg,
+      version,
+      location,
+      advisory: "GHSA-9qr9-h5gf-34mp",
+      hint: "Atualize next para uma versao corrigida (ex.: 15.5.7+ ou 16.0.7+).",
+    });
+  }
 }
 
 function scanLockfileV3(lock, findings) {
@@ -27,7 +104,7 @@ function scanLockfileV3(lock, findings) {
     const version = typeof meta.version === "string" ? meta.version : "";
     if (!version) continue;
 
-    for (const pkg of Object.keys(vulnerableByPackage)) {
+    for (const pkg of packagesToInspect) {
       const marker = `node_modules/${pkg}`;
       const matchesByPath = location === marker || location.endsWith(`/${marker}`);
       const matchesByName = meta.name === pkg;
@@ -86,12 +163,12 @@ scanLockfileV1Dependencies(lock.dependencies, findings);
 
 const uniqueFindings = dedupeFindings(findings);
 if (uniqueFindings.length > 0) {
-  console.error("ERRO DE SEGURANCA: versoes vulneraveis de React Server Components detectadas.");
+  console.error("ERRO DE SEGURANCA: dependencias vulneraveis detectadas.");
   for (const finding of uniqueFindings) {
-    console.error(`- ${finding.pkg}@${finding.version} em ${finding.location}`);
+    console.error(`- ${finding.pkg}@${finding.version} em ${finding.location} [${finding.advisory}]`);
+    console.error(`  -> ${finding.hint}`);
   }
-  console.error(remediationHint);
   process.exit(1);
 }
 
-console.log("security:check-rsc: ok. Nenhuma versao vulneravel de react-server-dom-* encontrada.");
+console.log("security:check-rsc: ok. Nenhuma versao vulneravel de react-server-dom-* ou next encontrada.");
