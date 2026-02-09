@@ -10,7 +10,7 @@ import {
   Award,
   Star,
 } from 'lucide-react';
-import { ResponsiveMasonry, Masonry } from 'react-responsive-masonry';
+import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry';
 import { useProductsStore, type Product } from '../stores/products';
 import { useCartStore } from '../stores/cart';
 import { useSiteConfigStore } from '../stores/siteConfig';
@@ -25,18 +25,18 @@ const categoryLabels: Record<string, string> = {
 
 const featureIconMap: Record<string, JSX.Element> = {
   Shield: <Shield size={18} />,
-  Truck: <Truck size={18} />, 
+  Truck: <Truck size={18} />,
   CreditCard: <CreditCard size={18} />,
   Award: <Award size={18} />,
 };
 
 const ensureFontLoaded = (font: string) => {
-  const id = ont-;
+  const id = `font-${font.replace(/\s+/g, '-')}`;
   if (document.getElementById(id)) return;
   const link = document.createElement('link');
   link.id = id;
   link.rel = 'stylesheet';
-  link.href = https://fonts.googleapis.com/css2?family=:wght@400;600;700&display=swap;
+  link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s+/g, '+')}:wght@400;600;700&display=swap`;
   document.head.appendChild(link);
 };
 
@@ -46,12 +46,12 @@ export function HomePage() {
   const { products, loading, error, fetchProducts, getFeaturedProducts } = useProductsStore();
   const { addItem } = useCartStore();
 
-  const heroBanner = ${import.meta.env.BASE_URL}banner-topo.png;
-  const middleBanner = ${import.meta.env.BASE_URL}banner-meio.png;
+  const heroBanner = `${import.meta.env.BASE_URL}banner-topo.png`;
+  const middleBanner = `${import.meta.env.BASE_URL}banner-meio.png`;
 
   const heroImage = siteConfig.heroImage || heroBanner;
   const bannerImage = siteConfig.bannerImage || middleBanner;
-  const gradientOverlay = linear-gradient(135deg, e6, d9);
+  const gradientOverlay = `linear-gradient(135deg, ${siteConfig.primaryColor}e6, ${siteConfig.secondaryColor}d9)`;
 
   useEffect(() => {
     void fetchProducts(true);
@@ -66,7 +66,7 @@ export function HomePage() {
     root.style.setProperty('--primary-green', siteConfig.secondaryColor);
     root.style.setProperty('--accent-yellow', siteConfig.accentColor);
     root.style.setProperty('--dark-bg', siteConfig.darkBg);
-    document.body.style.fontFamily = '', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    document.body.style.fontFamily = `'${siteConfig.primaryFont}', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
   }, [siteConfig]);
 
   const sortedProducts = useMemo(
@@ -92,15 +92,15 @@ export function HomePage() {
 
   const renderProductCard = (product: Product, compact = false) => (
     <div
-      key={gallery--}
-      className={${productCardBase} rounded-xl overflow-hidden flex flex-col}
+      key={`gallery-${product.id}-${compact ? 'compact' : 'full'}`}
+      className={`${productCardBase} rounded-xl overflow-hidden flex flex-col`}
     >
-      <div className={g-gray-100  flex items-center justify-center overflow-hidden}>
+      <div className={`bg-gray-100 ${compact ? 'h-60' : 'h-80'} flex items-center justify-center overflow-hidden`}>
         <img
           src={product.image}
           alt={product.model}
           className="max-w-full max-h-full object-contain cursor-pointer"
-          onClick={() => navigate(/product/)}
+          onClick={() => navigate(`/product/${product.id}`)}
         />
       </div>
       <div className="p-6 flex-1 flex flex-col">
@@ -109,9 +109,11 @@ export function HomePage() {
             {product.brand}
           </h3>
           <span
-            className={	ext-xs font-semibold px-2 py-1 rounded }
+            className={`text-xs font-semibold px-2 py-1 rounded ${
+              product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}
           >
-            {product.stock > 0 ? ${product.stock} em estoque : 'Esgotado'}
+            {product.stock > 0 ? `${product.stock} em estoque` : 'Esgotado'}
           </span>
         </div>
         <p className="text-gray-600 text-sm mb-2">{product.model}</p>
@@ -134,7 +136,7 @@ export function HomePage() {
             Carrinho
           </button>
           <button
-            onClick={() => navigate(/product/)}
+            onClick={() => navigate(`/product/${product.id}`)}
             className="bg-gray-100 text-gray-800 py-2 px-3 rounded hover:bg-gray-200 text-sm flex items-center justify-center gap-2"
           >
             <Eye size={14} />
@@ -162,7 +164,7 @@ export function HomePage() {
       return (
         <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory">
           {galleryProducts.map((product) => (
-            <div key={carousel-} className="min-w-[240px] snap-start">
+            <div key={`carousel-${product.id}`} className="min-w-[240px] snap-start">
               {renderProductCard(product, true)}
             </div>
           ))}
@@ -176,9 +178,12 @@ export function HomePage() {
   return (
     <div className="w-full">
       <section
-        className={
-elative overflow-hidden text-white }
-        style={siteConfig.layoutStyle === 'immersive' ? { backgroundImage: ${gradientOverlay}, url(), backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+        className={`relative overflow-hidden text-white ${siteConfig.layoutStyle === 'immersive' ? 'min-h-[420px]' : 'h-96'}`}
+        style={
+          siteConfig.layoutStyle === 'immersive'
+            ? { backgroundImage: `${gradientOverlay}, url(${heroImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            : undefined
+        }
       >
         {siteConfig.layoutStyle !== 'immersive' && (
           <img
@@ -193,10 +198,14 @@ elative overflow-hidden text-white }
         <div className="absolute inset-0" style={{ background: gradientOverlay }} />
 
         <div
-          className={${siteConfig.contentWidth === 'full' ? 'w-full max-w-screen-xl mx-auto px-6' : 'container px-4'} py-16 h-full flex flex-col }
+          className={`${
+            siteConfig.contentWidth === 'full' ? 'w-full max-w-screen-xl mx-auto px-6' : 'container px-4'
+          } py-16 h-full flex flex-col ${siteConfig.layoutStyle === 'split' ? 'md:flex-row md:items-center md:gap-10' : ''}`}
         >
           <div
-            className={lex-1 space-y-4  }
+            className={`flex-1 space-y-4 ${siteConfig.layoutStyle === 'split' ? 'md:max-w-xl' : ''} ${
+              siteConfig.heroAlignment === 'center' ? 'text-center' : 'text-left'
+            }`}
             style={{ fontFamily: siteConfig.headingFont }}
           >
             <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold">
@@ -204,7 +213,7 @@ elative overflow-hidden text-white }
             </span>
             <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">{siteConfig.heroTitle}</h1>
             <p className="text-lg md:text-xl text-white/90 max-w-2xl">{siteConfig.heroDescription}</p>
-            <div className={lex flex-wrap gap-3 }>
+            <div className={`flex flex-wrap gap-3 ${siteConfig.heroAlignment === 'center' ? 'justify-center' : ''}`}>
               <button
                 onClick={() => navigate('/products')}
                 className={
@@ -242,7 +251,7 @@ elative overflow-hidden text-white }
       </section>
 
       <section className="py-24 md:py-32 bg-white">
-        <div className={${siteConfig.contentWidth === 'full' ? 'w-full max-w-screen-xl mx-auto px-6' : 'container px-4'}}>
+        <div className={`${siteConfig.contentWidth === 'full' ? 'w-full max-w-screen-xl mx-auto px-6' : 'container px-4'}`}>
           <div className="flex items-center gap-3 rounded-full bg-blue-50 px-4 py-3">
             <div className="flex items-center gap-2 text-blue-800 font-semibold">
               <ChevronDown size={18} />
@@ -252,7 +261,7 @@ elative overflow-hidden text-white }
               {Array.from(new Set(products.map((p) => p.category))).slice(0, 4).map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => navigate(/products?category=)}
+                  onClick={() => navigate(`/products?category=${encodeURIComponent(cat)}`)}
                   className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow hover:bg-blue-100"
                 >
                   {categoryLabels[cat] || cat}
@@ -260,8 +269,8 @@ elative overflow-hidden text-white }
               ))}
               {Array.from(new Set(products.map((p) => p.diameter))).slice(0, 4).map((diameter) => (
                 <button
-                  key={home-dia-}
-                  onClick={() => navigate(/products?diameter=)}
+                  key={`home-dia-${diameter}`}
+                  onClick={() => navigate(`/products?diameter=${encodeURIComponent(diameter)}`)}
                   className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow hover:bg-blue-100"
                 >
                   Aro {diameter}
@@ -279,7 +288,7 @@ elative overflow-hidden text-white }
       </section>
 
       <section className="py-28 md:py-36 bg-gray-50">
-        <div className={${siteConfig.contentWidth === 'full' ? 'w-full max-w-screen-xl mx-auto px-6' : 'container px-4'}}>
+        <div className={`${siteConfig.contentWidth === 'full' ? 'w-full max-w-screen-xl mx-auto px-6' : 'container px-4'}`}>
           <div className="flex items-center justify-between mb-24 md:mb-28 gap-4">
             <h2 className="text-4xl font-bold" style={{ fontFamily: siteConfig.headingFont }}>
               Produtos em Destaque
@@ -325,7 +334,7 @@ elative overflow-hidden text-white }
       </section>
 
       <section className="py-24 md:py-32 bg-white">
-        <div className={${siteConfig.contentWidth === 'full' ? 'w-full max-w-screen-xl mx-auto px-6' : 'container px-4'}}>
+        <div className={`${siteConfig.contentWidth === 'full' ? 'w-full max-w-screen-xl mx-auto px-6' : 'container px-4'}`}>
           <div className="text-center mb-20 md:mb-24">
             <h2 className="text-4xl font-bold" style={{ fontFamily: siteConfig.headingFont }}>
               {siteConfig.galleryTitle}
@@ -338,10 +347,10 @@ elative overflow-hidden text-white }
       </section>
 
       <section className="py-16 bg-gray-50 border-t">
-        <div className={${siteConfig.contentWidth === 'full' ? 'w-full max-w-screen-xl mx-auto px-6' : 'container px-4'}}>
+        <div className={`${siteConfig.contentWidth === 'full' ? 'w-full max-w-screen-xl mx-auto px-6' : 'container px-4'}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {siteConfig.features.map((feature, index) => (
-              <div key={${feature.title}-} className="bg-white rounded-xl border p-5 flex items-start gap-3 shadow-sm">
+              <div key={`${feature.title}-${index}`} className="bg-white rounded-xl border p-5 flex items-start gap-3 shadow-sm">
                 <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center">
                   {featureIconMap[feature.icon] || <Star size={18} />}
                 </div>
