@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 interface NotificationFlags {
   cartAddedAt: string | null;
   purchaseCompletedAt: string | null;
+  paymentApprovedAt: string | null;
   orderOnTheWayAt: string | null;
 }
 
@@ -13,6 +14,7 @@ interface NotificationsState {
   notifiedShippedOrderIds: string[];
   notifyCartAdded: (productLabel?: string) => void;
   notifyPurchaseCompleted: (orderId?: string) => void;
+  notifyPaymentApproved: (orderId?: string, paymentMethodLabel?: string) => void;
   notifyOrderOnTheWay: (orderId: string) => void;
   clearFlags: () => void;
 }
@@ -20,6 +22,7 @@ interface NotificationsState {
 const initialFlags: NotificationFlags = {
   cartAddedAt: null,
   purchaseCompletedAt: null,
+  paymentApprovedAt: null,
   orderOnTheWayAt: null,
 };
 
@@ -54,7 +57,22 @@ export const useNotificationsStore = create<NotificationsState>()(
         }));
 
         const orderLabel = orderId ? ` Pedido #${orderId.slice(0, 8)}.` : '';
-        toast.success(`Compra realizada com sucesso!${orderLabel}`, { id: 'purchase-completed' });
+        toast.success(`Pedido finalizado com sucesso!${orderLabel}`, { id: 'purchase-completed' });
+      },
+
+      notifyPaymentApproved: (orderId, paymentMethodLabel) => {
+        set((state) => ({
+          flags: {
+            ...state.flags,
+            paymentApprovedAt: nowIso(),
+          },
+        }));
+
+        const orderLabel = orderId ? ` Pedido #${orderId.slice(0, 8)}.` : '';
+        const methodLabel = paymentMethodLabel ? ` via ${paymentMethodLabel}` : '';
+        toast.success(`Pagamento aprovado${methodLabel}!${orderLabel}`, {
+          id: orderId ? `payment-approved-${orderId}` : 'payment-approved',
+        });
       },
 
       notifyOrderOnTheWay: (orderId) => {
@@ -93,4 +111,3 @@ export const useNotificationsStore = create<NotificationsState>()(
     }
   )
 );
-
