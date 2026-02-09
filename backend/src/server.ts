@@ -95,10 +95,27 @@ const supabaseAuthKey = hasConfiguredSecret(supabaseAnonKey)
   ? supabaseServiceKey
   : '';
 
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+const defaultAllowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+const envAllowedOrigins = (process.env.FRONTEND_URL || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
+const allowedOrigins = [...defaultAllowedOrigins, ...envAllowedOrigins];
+const vercelDomainRegex = /\.vercel\.app$/i;
+
+const isOriginAllowed = (origin?: string | null) => {
+  if (!origin) return true; // server-to-server ou same-origin sem header
+  if (allowedOrigins.includes(origin)) return true;
+
+  try {
+    const parsed = new URL(origin);
+    if (vercelDomainRegex.test(parsed.hostname)) return true;
+  } catch {
+    return false;
+  }
+
+  return false;
+};
 
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -223,7 +240,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (isOriginAllowed(origin)) {
         callback(null, true);
         return;
       }
