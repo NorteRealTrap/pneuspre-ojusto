@@ -1,0 +1,9 @@
+*** Begin Patch
+*** Update File: src/app/stores/siteConfig.ts
+@@
+-  storeLogo: string;
++  storeLogo: string;
++  primaryFont: string;
++  headingFont: string;
++  contentWidth: 'boxed' | 'full';
+*** End Patch

@@ -47,11 +47,13 @@ export function WishlistPage() {
             key={product.id}
             className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
           >
-            <img src={product.image} alt={product.model} className="w-full h-48 object-cover" />
+            <Link to={`/product/${product.id}`} className="block">
+              <img src={product.image} alt={product.model} className="w-full h-48 object-cover" />
+            </Link>
             <div className="p-4">
-              <h3 className="font-semibold text-lg">
+              <Link to={`/product/${product.id}`} className="font-semibold text-lg hover:text-blue-700">
                 {product.brand} {product.model}
-              </h3>
+              </Link>
               <p className="text-gray-600 text-sm">
                 {product.width}/{product.profile}R{product.diameter}
               </p>

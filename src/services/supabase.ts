@@ -13,12 +13,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // AUTENTICAÇÃO
 // ============================================
 export const authService = {
-  signUp: async (email: string, password: string, metadata: any) => {
+  signUp: async (email: string, password: string, metadata: any, redirectTo?: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: metadata
+        data: metadata,
+        emailRedirectTo: redirectTo,
       }
     });
     return { data, error };

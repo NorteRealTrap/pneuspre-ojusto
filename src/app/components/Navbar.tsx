@@ -18,10 +18,9 @@ import { useProductsStore } from '../stores/products';
 import './Navbar.css';
 
 export function Navbar() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showMegaMenu, setShowMegaMenu] = useState(false);
   const logoUrl = `${import.meta.env.BASE_URL}logo.png`;
 
   const { isAuthenticated, user, profile, logout } = useAuthStore();
@@ -58,8 +57,7 @@ export function Navbar() {
 
     const query = params.toString();
     navigate(query ? `/products?${query}` : '/products');
-    setShowMegaMenu(false);
-    setIsMobileMenuOpen(false);
+    setIsProductMenuOpen(false);
   };
 
   const handleSearch = (e: FormEvent) => {
@@ -108,52 +106,109 @@ export function Navbar() {
             <div className="navbar-actions">
               <div className="user-menu-wrapper">
                 <button
-                  className="navbar-icon-btn"
-                  onClick={() => setShowMegaMenu((prev) => !prev)}
+                  className="navbar-icon-btn product-menu-btn"
+                  onClick={() => setIsProductMenuOpen((prev) => !prev)}
                   title="Menu de produtos"
                 >
                   <Menu size={24} />
                   <ChevronDown size={14} />
                 </button>
-                {showMegaMenu && (
-                  <div className="mega-dropdown">
-                    <div className="mega-column">
-                      <h4>Categorias</h4>
-                      {categories.map((cat) => (
-                        <button
-                          key={cat}
-                          className="mega-item"
-                          onClick={() => navigateWithFilters({ category: cat })}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="mega-column">
-                      <h4>Modelos</h4>
-                      <div className="mega-scroll">
-                        {models.map((model) => (
+                {isProductMenuOpen && (
+                  <div className="product-menu">
+                    <div className="product-menu-desktop">
+                      <div className="mega-column">
+                        <h4>Categorias</h4>
+                        {categories.map((cat) => (
                           <button
-                            key={model}
+                            key={cat}
                             className="mega-item"
-                            onClick={() => navigateWithFilters({ search: model })}
+                            onClick={() => navigateWithFilters({ category: cat })}
                           >
-                            {model}
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mega-column">
+                        <h4>Modelos</h4>
+                        <div className="mega-scroll">
+                          {models.map((model) => (
+                            <button
+                              key={model}
+                              className="mega-item"
+                              onClick={() => navigateWithFilters({ search: model })}
+                            >
+                              {model}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mega-column">
+                        <h4>Diâmetros</h4>
+                        {diameters.map((diameter) => (
+                          <button
+                            key={diameter}
+                            className="mega-item"
+                            onClick={() => navigateWithFilters({ diameter })}
+                          >
+                            Aro {diameter}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <div className="mega-column">
-                      <h4>Di�metros</h4>
-                      {diameters.map((diameter) => (
-                        <button
-                          key={diameter}
-                          className="mega-item"
-                          onClick={() => navigateWithFilters({ diameter })}
-                        >
-                          Aro {diameter}
-                        </button>
-                      ))}
+
+                    <div className="product-menu-mobile">
+                      <div className="mobile-menu-section">
+                        <h4 className="mobile-menu-section-title">Categorias</h4>
+                        <ul className="mobile-menu-list">
+                          <li>
+                            <button className="mobile-menu-item" onClick={() => navigateWithFilters({})}>
+                              Catalogo Completo
+                            </button>
+                          </li>
+                          {categories.map((category) => (
+                            <li key={category}>
+                              <button 
+                                className="mobile-menu-item"
+                                onClick={() => navigateWithFilters({ category })}
+                              >
+                                {category}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="mobile-menu-section">
+                        <h4 className="mobile-menu-section-title">Modelos</h4>
+                        <ul className="mobile-menu-list mobile-menu-scroll">
+                          {models.map((model) => (
+                            <li key={`model-${model}`}>
+                              <button 
+                                className="mobile-menu-item"
+                                onClick={() => navigateWithFilters({ search: model })}
+                              >
+                                {model}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="mobile-menu-section">
+                        <h4 className="mobile-menu-section-title">Diâmetros (Aro)</h4>
+                        <ul className="mobile-menu-list">
+                          {diameters.map((diameter) => (
+                            <li key={`dia-${diameter}`}>
+                              <button 
+                                className="mobile-menu-item"
+                                onClick={() => navigateWithFilters({ diameter })}
+                              >
+                                Aro {diameter}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -241,73 +296,11 @@ export function Navbar() {
                   </div>
                 )}
               </div>
-
-              <button
-                className="navbar-icon-btn mobile-menu-btn"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              >
-                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
             </div>
           </div>
         </div>
       </nav>
-
-      {isMobileMenuOpen && (
-        <div className="mobile-menu">
-          <div className="mobile-menu-content">
-            <form onSubmit={handleSearch} className="mobile-search">
-              <input
-                type="text"
-                placeholder="Buscar pneus por medida, marca..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
-              <button type="submit" className="search-button">
-                <Search size={20} />
-              </button>
-            </form>
-
-            <div className="mobile-categories">
-              <h3>Menu de Produtos</h3>
-              <ul>
-                <li>
-                  <Link to="/products" onClick={() => setIsMobileMenuOpen(false)}>
-                    Catalogo Completo
-                  </Link>
-                </li>
-                {categories.map((category) => (
-                  <li key={category}>
-                    <Link
-                      to="/products"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigateWithFilters({ category });
-                      }}
-                    >
-                      {category}
-                    </Link>
-                  </li>
-                ))}
-                {diameters.map((diameter) => (
-                  <li key={`dia-${diameter}`}>
-                    <Link
-                      to="/products"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigateWithFilters({ diameter });
-                      }}
-                    >
-                      Aro {diameter}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
+

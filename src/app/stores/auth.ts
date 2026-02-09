@@ -96,7 +96,12 @@ export const useAuthStore = create<AuthState>()((set) => ({
         phone: phone.trim(),
       };
 
-      const { data, error } = await authService.signUp(normalizedEmail, password, metadata);
+      const redirectTo = new URL(
+        `${import.meta.env.BASE_URL}`,
+        window.location.origin
+      ).toString();
+
+      const { data, error } = await authService.signUp(normalizedEmail, password, metadata, redirectTo);
       if (error) throw error;
 
       const requiresEmailConfirmation = !data.session;

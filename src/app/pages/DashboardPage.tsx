@@ -12,9 +12,17 @@ import {
   Trash2,
   Save,
   X,
+  Palette,
+  Type,
+  LayoutDashboard,
+  Image as ImageIcon,
+  Sparkles,
+  Link2,
+  Library,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 import { useProductsStore, type Product, type ProductInput } from '../stores/products';
+import { useSiteConfigStore, type SiteConfig } from '../stores/siteConfig';
 import './DashboardPage.css';
 
 function createEmptyProduct(): ProductInput {
@@ -90,6 +98,48 @@ export function DashboardPage() {
     updateProduct,
     deleteProduct,
   } = useProductsStore();
+
+  const { config: siteConfig, updateConfig, resetConfig } = useSiteConfigStore();
+  const [featureDraft, setFeatureDraft] = useState({ icon: 'Star', title: '', description: '' });
+
+  const fontOptions = ['Inter', 'Poppins', 'Montserrat', 'Space Grotesk', 'Roboto Slab', 'Playfair Display'];
+  const layoutOptions: Array<{ value: SiteConfig['layoutStyle']; label: string; helper: string }> = [
+    { value: 'classic', label: 'Clássico', helper: 'Hero com fundo sólido e texto alinhado' },
+    { value: 'split', label: 'Split', helper: 'Imagem à direita e texto à esquerda' },
+    { value: 'immersive', label: 'Imersivo', helper: 'Hero com fundo em tela cheia' },
+  ];
+  const galleryOptions: Array<{ value: SiteConfig['galleryLayout']; label: string; helper: string }> = [
+    { value: 'grid', label: 'Grade', helper: 'Cards alinhados, foco em conversão' },
+    { value: 'masonry', label: 'Masonry', helper: 'Layout dinâmico usando biblioteca responsiva' },
+    { value: 'carousel', label: 'Carrossel', helper: 'Slider moderno para vitrines hero' },
+  ];
+  const cardStyles: Array<{ value: SiteConfig['productCardStyle']; label: string; helper: string }> = [
+    { value: 'solid', label: 'Sólido', helper: 'Cartões com fundo branco e bordas' },
+    { value: 'glass', label: 'Glassmorphism', helper: 'Cartões translúcidos com blur leve' },
+    { value: 'outline', label: 'Outline', helper: 'Bordas finas e foco na tipografia' },
+  ];
+
+  const handleConfigChange = <K extends keyof SiteConfig>(key: K, value: SiteConfig[K]) => {
+    updateConfig({ [key]: value });
+  };
+
+  const handleFeatureChange = (index: number, field: 'icon' | 'title' | 'description', value: string) => {
+    const updated = [...siteConfig.features];
+    updated[index] = { ...updated[index], [field]: value };
+    updateConfig({ features: updated });
+  };
+
+  const addFeature = () => {
+    if (!featureDraft.title.trim()) return;
+    updateConfig({ features: [...siteConfig.features, { ...featureDraft }] });
+    setFeatureDraft({ icon: 'Star', title: '', description: '' });
+  };
+
+  const removeFeature = (index: number) => {
+    const updated = [...siteConfig.features];
+    updated.splice(index, 1);
+    updateConfig({ features: updated });
+  };
 
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -401,40 +451,471 @@ export function DashboardPage() {
         )}
 
         {activeTab === 'settings' && (
-          <div className="dashboard-content">
+          <div className="dashboard-content settings-grid">
             <div className="settings-section">
-              <h2>Configuracoes da Loja</h2>
-              <div className="settings-form">
+              <div className="section-header">
+                <div className="section-title">
+                  <Palette size={20} />
+                  <div>
+                    <h2>Identidade e Marca</h2>
+                    <p>Logo, tipografia e dados principais da vitrine.</p>
+                  </div>
+                </div>
+                <button className="btn btn-outline" onClick={resetConfig}>
+                  <Sparkles size={18} />
+                  Restaurar padrão
+                </button>
+              </div>
+              <div className="settings-form two-col">
                 <div className="form-group">
                   <label>Nome da Loja</label>
-                  <input type="text" defaultValue="Pneus.PrecoJusto" className="input" />
+                  <input
+                    type="text"
+                    value={siteConfig.storeName}
+                    onChange={(e) => handleConfigChange('storeName', e.target.value)}
+                    className="input"
+                  />
                 </div>
                 <div className="form-group">
-                  <label>CNPJ</label>
-                  <input type="text" placeholder="00.000.000/0000-00" className="input" />
+                  <label>Slogan</label>
+                  <input
+                    type="text"
+                    value={siteConfig.storeSlogan}
+                    onChange={(e) => handleConfigChange('storeSlogan', e.target.value)}
+                    className="input"
+                  />
+                </div>
+                <div className="form-group span-2">
+                  <label>Descrição curta</label>
+                  <textarea
+                    value={siteConfig.storeDescription}
+                    onChange={(e) => handleConfigChange('storeDescription', e.target.value)}
+                    className="input"
+                  />
                 </div>
                 <div className="form-group">
                   <label>Telefone</label>
-                  <input type="text" placeholder="(11) 99999-9999" className="input" />
+                  <input
+                    type="text"
+                    value={siteConfig.phone}
+                    onChange={(e) => handleConfigChange('phone', e.target.value)}
+                    className="input"
+                  />
                 </div>
                 <div className="form-group">
                   <label>E-mail</label>
-                  <input type="email" defaultValue="contato@pneusprecojusto.com.br" className="input" />
+                  <input
+                    type="email"
+                    value={siteConfig.email}
+                    onChange={(e) => handleConfigChange('email', e.target.value)}
+                    className="input"
+                  />
                 </div>
                 <div className="form-group">
-                  <label>Endereco</label>
-                  <input type="text" placeholder="Rua, Numero - Bairro" className="input" />
+                  <label>WhatsApp</label>
+                  <input
+                    type="text"
+                    value={siteConfig.whatsapp}
+                    onChange={(e) => handleConfigChange('whatsapp', e.target.value)}
+                    className="input"
+                  />
                 </div>
-                <button className="btn btn-primary">
-                  <Save size={20} />
-                  Salvar Configuracoes
+                <div className="form-group">
+                  <label>Endereço</label>
+                  <input
+                    type="text"
+                    value={siteConfig.address}
+                    onChange={(e) => handleConfigChange('address', e.target.value)}
+                    className="input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <div className="section-header">
+                <div className="section-title">
+                  <Type size={20} />
+                  <div>
+                    <h3>Tipografia e Paleta</h3>
+                    <p>Edite fontes, cores e estilo dos cartões.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="pill-grid">
+                {fontOptions.map((font) => (
+                  <button
+                    key={font}
+                    className={pill }
+                    onClick={() => handleConfigChange('primaryFont', font)}
+                  >
+                    {font}
+                  </button>
+                ))}
+              </div>
+              <div className="two-col colors-row">
+                <div className="form-group">
+                  <label>Cor primária</label>
+                  <div className="color-input">
+                    <input
+                      type="color"
+                      value={siteConfig.primaryColor}
+                      onChange={(e) => handleConfigChange('primaryColor', e.target.value)}
+                    />
+                    <input
+                      className="input"
+                      value={siteConfig.primaryColor}
+                      onChange={(e) => handleConfigChange('primaryColor', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Cor secundária</label>
+                  <div className="color-input">
+                    <input
+                      type="color"
+                      value={siteConfig.secondaryColor}
+                      onChange={(e) => handleConfigChange('secondaryColor', e.target.value)}
+                    />
+                    <input
+                      className="input"
+                      value={siteConfig.secondaryColor}
+                      onChange={(e) => handleConfigChange('secondaryColor', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Cor de destaque</label>
+                  <div className="color-input">
+                    <input
+                      type="color"
+                      value={siteConfig.accentColor}
+                      onChange={(e) => handleConfigChange('accentColor', e.target.value)}
+                    />
+                    <input
+                      className="input"
+                      value={siteConfig.accentColor}
+                      onChange={(e) => handleConfigChange('accentColor', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Plano de fundo escuro</label>
+                  <div className="color-input">
+                    <input
+                      type="color"
+                      value={siteConfig.darkBg}
+                      onChange={(e) => handleConfigChange('darkBg', e.target.value)}
+                    />
+                    <input
+                      className="input"
+                      value={siteConfig.darkBg}
+                      onChange={(e) => handleConfigChange('darkBg', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="pill-grid">
+                {cardStyles.map((option) => (
+                  <button
+                    key={option.value}
+                    className={pill }
+                    onClick={() => handleConfigChange('productCardStyle', option.value)}
+                  >
+                    {option.label}
+                    <small>{option.helper}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <div className="section-header">
+                <div className="section-title">
+                  <LayoutDashboard size={20} />
+                  <div>
+                    <h3>Layout, Hero e Galerias</h3>
+                    <p>Controle de posicionamento, mídias e bibliotecas modernas.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="pill-grid">
+                {layoutOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    className={pill }
+                    onClick={() => handleConfigChange('layoutStyle', option.value)}
+                  >
+                    {option.label}
+                    <small>{option.helper}</small>
+                  </button>
+                ))}
+              </div>
+              <div className="pill-grid">
+                {galleryOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    className={pill }
+                    onClick={() => handleConfigChange('galleryLayout', option.value)}
+                  >
+                    {option.label}
+                    <small>{option.helper}</small>
+                  </button>
+                ))}
+              </div>
+              <div className="settings-form two-col">
+                <div className="form-group">
+                  <label>Título do hero</label>
+                  <input
+                    className="input"
+                    value={siteConfig.heroTitle}
+                    onChange={(e) => handleConfigChange('heroTitle', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Chamada do hero</label>
+                  <input
+                    className="input"
+                    value={siteConfig.heroSubtitle}
+                    onChange={(e) => handleConfigChange('heroSubtitle', e.target.value)}
+                  />
+                </div>
+                <div className="form-group span-2">
+                  <label>Descrição de abertura</label>
+                  <textarea
+                    className="input"
+                    value={siteConfig.heroDescription}
+                    onChange={(e) => handleConfigChange('heroDescription', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Imagem principal (URL)</label>
+                  <input
+                    className="input"
+                    value={siteConfig.heroImage}
+                    onChange={(e) => handleConfigChange('heroImage', e.target.value)}
+                  />
+                  <small className="input-hint">Cole links web (CDN, Unsplash, drive público).</small>
+                </div>
+                <div className="form-group">
+                  <label>Banner promocional (URL)</label>
+                  <input
+                    className="input"
+                    value={siteConfig.bannerImage}
+                    onChange={(e) => handleConfigChange('bannerImage', e.target.value)}
+                  />
+                  <small className="input-hint">Aceita GIF/PNG/JPG hospedados.</small>
+                </div>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <div className="section-header">
+                <div className="section-title">
+                  <ImageIcon size={20} />
+                  <div>
+                    <h3>Galerias, Destaques e CTA</h3>
+                    <p>Textos, legendas e ação principal do site.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="settings-form two-col">
+                <div className="form-group span-2">
+                  <label>Badge / Selo</label>
+                  <input
+                    className="input"
+                    value={siteConfig.heroBadge}
+                    onChange={(e) => handleConfigChange('heroBadge', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Título da galeria</label>
+                  <input
+                    className="input"
+                    value={siteConfig.galleryTitle}
+                    onChange={(e) => handleConfigChange('galleryTitle', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Descrição da galeria</label>
+                  <input
+                    className="input"
+                    value={siteConfig.galleryDescription}
+                    onChange={(e) => handleConfigChange('galleryDescription', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Título da CTA</label>
+                  <input
+                    className="input"
+                    value={siteConfig.ctaTitle}
+                    onChange={(e) => handleConfigChange('ctaTitle', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Descrição da CTA</label>
+                  <textarea
+                    className="input"
+                    value={siteConfig.ctaDescription}
+                    onChange={(e) => handleConfigChange('ctaDescription', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Texto do botão</label>
+                  <input
+                    className="input"
+                    value={siteConfig.ctaButtonText}
+                    onChange={(e) => handleConfigChange('ctaButtonText', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Estilo do botão</label>
+                  <select
+                    className="input"
+                    value={siteConfig.ctaVariant}
+                    onChange={(e) => handleConfigChange('ctaVariant', e.target.value as SiteConfig['ctaVariant'])}
+                  >
+                    <option value="solid">Sólido</option>
+                    <option value="outline">Outline</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <div className="section-header">
+                <div className="section-title">
+                  <Library size={20} />
+                  <div>
+                    <h3>SEO, Inteligência e Bibliotecas</h3>
+                    <p>Metadados, recomendações automáticas e permissões de imagens externas.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="settings-form two-col">
+                <div className="form-group">
+                  <label>Título SEO</label>
+                  <input
+                    className="input"
+                    value={siteConfig.metaTitle}
+                    onChange={(e) => handleConfigChange('metaTitle', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Descrição SEO</label>
+                  <textarea
+                    className="input"
+                    value={siteConfig.metaDescription}
+                    onChange={(e) => handleConfigChange('metaDescription', e.target.value)}
+                  />
+                </div>
+                <div className="form-group span-2">
+                  <label>Palavras-chave</label>
+                  <input
+                    className="input"
+                    value={siteConfig.metaKeywords}
+                    onChange={(e) => handleConfigChange('metaKeywords', e.target.value)}
+                  />
+                </div>
+                <label className="checkbox-label span-2">
+                  <input
+                    type="checkbox"
+                    checked={siteConfig.smartRecommendations}
+                    onChange={() => handleConfigChange('smartRecommendations', !siteConfig.smartRecommendations)}
+                  />
+                  <Sparkles size={16} /> Ativar sugestões inteligentes (layout + destaques)
+                </label>
+                <label className="checkbox-label span-2">
+                  <input
+                    type="checkbox"
+                    checked={siteConfig.autoFeatureLowStock}
+                    onChange={() => handleConfigChange('autoFeatureLowStock', !siteConfig.autoFeatureLowStock)}
+                  />
+                  <LayoutDashboard size={16} /> Destacar automaticamente produtos com estoque crítico
+                </label>
+                <label className="checkbox-label span-2">
+                  <input
+                    type="checkbox"
+                    checked={siteConfig.allowExternalImageLinks}
+                    onChange={() => handleConfigChange('allowExternalImageLinks', !siteConfig.allowExternalImageLinks)}
+                  />
+                  <Link2 size={16} /> Permitir imagens por link externo (CDN)
+                </label>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <div className="section-header">
+                <div className="section-title">
+                  <Sparkles size={20} />
+                  <div>
+                    <h3>Blocos de destaque (feature grid)</h3>
+                    <p>Edite cartões informativos que aparecem no hero e rodapé.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="feature-list">
+                {siteConfig.features.map((feature, index) => (
+                  <div key={feature.title + "-" + index} className="feature-card">
+                    <div className="form-group">
+                      <label>Ícone (lucide)</label>
+                      <input
+                        className="input"
+                        value={feature.icon}
+                        onChange={(e) => handleFeatureChange(index, 'icon', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Título</label>
+                      <input
+                        className="input"
+                        value={feature.title}
+                        onChange={(e) => handleFeatureChange(index, 'title', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Descrição</label>
+                      <input
+                        className="input"
+                        value={feature.description}
+                        onChange={(e) => handleFeatureChange(index, 'description', e.target.value)}
+                      />
+                    </div>
+                    <button className="btn btn-outline danger" onClick={() => removeFeature(index)}>
+                      <Trash2 size={16} /> Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="feature-add">
+                <input
+                  className="input"
+                  placeholder="Ícone (ex: Shield)"
+                  value={featureDraft.icon}
+                  onChange={(e) => setFeatureDraft({ ...featureDraft, icon: e.target.value })}
+                />
+                <input
+                  className="input"
+                  placeholder="Título"
+                  value={featureDraft.title}
+                  onChange={(e) => setFeatureDraft({ ...featureDraft, title: e.target.value })}
+                />
+                <input
+                  className="input"
+                  placeholder="Descrição"
+                  value={featureDraft.description}
+                  onChange={(e) => setFeatureDraft({ ...featureDraft, description: e.target.value })}
+                />
+                <button className="btn btn-primary" onClick={addFeature}>
+                  <Plus size={16} /> Adicionar bloco
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {showAddProduct && (
+        
+{showAddProduct && (
           <div className="modal-overlay" onClick={() => setShowAddProduct(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
@@ -533,12 +1014,31 @@ export function DashboardPage() {
                     <option value="summer">Verao</option>
                     <option value="winter">Inverno</option>
                   </select>
-                  <input
-                    placeholder="URL da Imagem"
-                    value={newProduct.image}
-                    onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                    className="input span-2"
-                  />
+                  <div className="span-2 image-input-group">
+                    <input
+                      placeholder="URL da Imagem"
+                      value={newProduct.image}
+                      onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
+                      className="input"
+                    />
+                    <small className="input-hint">
+                      Cole um link público (https://...) para usar imagens hospedadas na web.
+                      {siteConfig.allowExternalImageLinks
+                        ? ' Links externos habilitados no painel.'
+                        : ' Ative permissões em Configurações > SEO e Inteligência.'}
+                    </small>
+                    {newProduct.image && (
+                      <div className="image-preview">
+                        <img
+                          src={newProduct.image}
+                          alt={newProduct.model || 'Pré-visualização do produto'}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
                   <input
                     placeholder="Caracteristicas separadas por virgula"
                     value={featuresInput}
@@ -625,12 +1125,26 @@ export function DashboardPage() {
                     onChange={(e) => setEditingProduct({ ...editingProduct, stock: Number(e.target.value) })}
                     className="input"
                   />
-                  <input
-                    placeholder="URL da Imagem"
-                    value={editingProduct.image}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                    className="input span-2"
-                  />
+                  <div className="span-2 image-input-group">
+                    <input
+                      placeholder="URL da Imagem"
+                      value={editingProduct.image}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
+                      className="input"
+                    />
+                    <small className="input-hint">Cole um link público (https://) ou CDN segura.</small>
+                    {editingProduct.image && (
+                      <div className="image-preview">
+                        <img
+                          src={editingProduct.image}
+                          alt={editingProduct.model}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
                   <label className="checkbox-label span-2">
                     <input
                       type="checkbox"

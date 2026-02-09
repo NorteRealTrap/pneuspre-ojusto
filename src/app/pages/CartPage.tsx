@@ -36,12 +36,17 @@ export function CartPage() {
                 <img
                   src={item.product.image}
                   alt={item.product.model}
-                  className="w-24 h-24 object-cover rounded"
+                  className="w-24 h-24 object-cover rounded cursor-pointer"
+                  onClick={() => navigate(`/product/${item.product.id}`)}
                 />
                 <div className="flex-1">
-                  <h3 className="font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/product/${item.product.id}`)}
+                    className="font-semibold text-left hover:text-blue-700"
+                  >
                     {item.product.brand} {item.product.model}
-                  </h3>
+                  </button>
                   <p className="text-gray-600 text-sm">
                     {item.product.width}/{item.product.profile}R{item.product.diameter}
                   </p>
