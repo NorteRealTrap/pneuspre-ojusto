@@ -108,7 +108,13 @@ export function ProductsPage() {
     });
   }, [searchParamsString, location.pathname, resetFilters, setFilters]);
 
-  const categories = ['passeio', 'suv', 'caminhonete', 'van', 'moto'];
+  const categories = [
+    { value: 'passeio', label: 'Passeio' },
+    { value: 'suv', label: 'SUV' },
+    { value: 'caminhonete', label: 'Caminhonete' },
+    { value: 'van', label: 'Van / Utilitário' },
+    { value: 'moto', label: 'Moto' },
+  ];
   const brands = Array.from(new Set(products.map((product) => product.brand))).sort();
 
   const handleAddToCart = (productId: string) => {
@@ -155,8 +161,8 @@ export function ProductsPage() {
               >
                 <option value="">Todas</option>
                 {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
                   </option>
                 ))}
               </select>
@@ -237,40 +243,42 @@ export function ProductsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map((product) => (
-                <div
+                <article
                   key={product.id}
                   className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                  aria-label={`${product.brand} ${product.model}`}
                 >
-                  <img
-                    src={product.image}
-                    alt={product.model}
-                    className="w-full h-48 object-cover cursor-pointer"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                  />
+                  <a href={`/product/${product.id}`} onClick={(e) => { e.preventDefault(); navigate(`/product/${product.id}`); }}>
+                    <img
+                      src={product.image}
+                      alt={`${product.brand} ${product.model}`}
+                      className="w-full h-48 object-cover cursor-pointer"
+                      loading="lazy"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = `${import.meta.env.BASE_URL}logo.png`; }}
+                    />
+                  </a>
                   <div className="p-4">
                     <h3 className="font-semibold text-lg">
                       {product.brand} {product.model}
                     </h3>
                     <p className="text-gray-600 text-sm">
-                      {product.width}/{product.profile}R{product.diameter}
+                      {product.width}/{product.profile} R{product.diameter}
                     </p>
 
                     <div className="mt-2 flex items-center justify-between">
                       <div>
                         <span className="text-2xl font-bold text-green-600">
-                          R$ {product.price.toFixed(2)}
+                          {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
                         {product.old_price && (
                           <span className="ml-2 text-sm text-gray-500 line-through">
-                            R$ {product.old_price.toFixed(2)}
+                            {product.old_price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
                         )}
                       </div>
                       <span
                         className={`px-2 py-1 text-xs rounded ${
-                          product.stock > 0
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                          product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}
                       >
                         {product.stock > 0 ? `${product.stock} em estoque` : 'Esgotado'}
@@ -291,12 +299,14 @@ export function ProductsPage() {
                     <button
                       onClick={() => handleAddToCart(product.id)}
                       disabled={product.stock === 0}
+                      aria-disabled={product.stock === 0}
+                      aria-label={product.stock > 0 ? `Adicionar ${product.brand} ${product.model} ao carrinho` : `${product.brand} ${product.model} esgotado`}
                       className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {product.stock > 0 ? 'Adicionar ao Carrinho' : 'Esgotado'}
                     </button>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}
