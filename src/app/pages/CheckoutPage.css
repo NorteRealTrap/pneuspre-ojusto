@@ -1,0 +1,109 @@
+/* Layout isolation for checkout to prevent collisions with storefront/global CSS */
+.app-container-checkout .checkout-shell,
+body[data-prefix='checkout'] .checkout-shell {
+  width: 100%;
+  overflow-x: clip;
+}
+
+.app-container-checkout .checkout-shell *,
+.app-container-checkout .checkout-shell *::before,
+.app-container-checkout .checkout-shell *::after,
+body[data-prefix='checkout'] .checkout-shell *,
+body[data-prefix='checkout'] .checkout-shell *::before,
+body[data-prefix='checkout'] .checkout-shell *::after {
+  box-sizing: border-box;
+}
+
+/* Keep responsive images without overriding explicit Tailwind heights */
+.app-container-checkout .checkout-shell img,
+body[data-prefix='checkout'] .checkout-shell img {
+  max-width: 100%;
+}
+
+.app-container-checkout .checkout-logo,
+body[data-prefix='checkout'] .checkout-logo {
+  width: auto;
+  height: 48px;
+  object-fit: contain;
+}
+
+.app-container-checkout .checkout-order-item-image,
+body[data-prefix='checkout'] .checkout-order-item-image {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  min-height: 64px;
+  object-fit: contain;
+}
+
+.app-container-checkout .checkout-shell-container,
+body[data-prefix='checkout'] .checkout-shell-container {
+  max-width: 1200px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.app-container-checkout .checkout-layout,
+body[data-prefix='checkout'] .checkout-layout {
+  align-items: start;
+}
+
+/* Remove inherited transforms that can break sticky side panels */
+.app-container-checkout .checkout-summary,
+body[data-prefix='checkout'] .checkout-summary {
+  transform: none;
+}
+
+/* Defensive sizing for checkout dialogs/modals */
+.app-container-checkout [role='dialog'],
+body[data-prefix='checkout'] [role='dialog'] {
+  width: min(560px, calc(100vw - 24px));
+  max-width: 560px;
+}
+
+@media (min-width: 992px) {
+  .app-container-checkout .checkout-layout,
+  body[data-prefix='checkout'] .checkout-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .app-container-checkout .checkout-summary,
+  body[data-prefix='checkout'] .checkout-summary {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+  }
+}
+
+@media (max-width: 991px) {
+  .app-container-checkout .checkout-shell,
+  body[data-prefix='checkout'] .checkout-shell {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  .app-container-checkout .checkout-layout,
+  body[data-prefix='checkout'] .checkout-layout {
+    display: block;
+  }
+
+  .app-container-checkout .checkout-summary,
+  body[data-prefix='checkout'] .checkout-summary {
+    position: static;
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-container-checkout .checkout-shell-container,
+  body[data-prefix='checkout'] .checkout-shell-container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}

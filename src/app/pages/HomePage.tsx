@@ -14,6 +14,7 @@ import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry';
 import { useProductsStore, type Product } from '../stores/products';
 import { useCartStore } from '../stores/cart';
 import { useSiteConfigStore } from '../stores/siteConfig';
+import { TireMarquee } from '../components/TireMarquee';
 
 const categoryLabels: Record<string, string> = {
   passeio: 'Automóveis',
@@ -249,6 +250,8 @@ export function HomePage() {
           )}
         </div>
       </section>
+
+      <TireMarquee />
 
       <section className="py-24 md:py-32 bg-white">
         <div className={`${siteConfig.contentWidth === 'full' ? 'w-full max-w-screen-xl mx-auto px-6' : 'container px-4'}`}>
