@@ -1003,16 +1003,6 @@ app.get('/api/health', (_req: Request, res: Response) => {
   return res.status(200).json({ ok: true, service: 'payment-backend' });
 });
 
-app.post('/api/payment/checkout/initiate', paymentInitiateRateLimit, authenticate, initiateCheckoutPayment);
-app.post('/api/payment/checkout/confirm', paymentConfirmRateLimit, authenticate, confirmCheckoutPayment);
-app.get('/api/payment/checkout/:paymentId/status', paymentStatusRateLimit, authenticate, getCheckoutPaymentStatus);
-app.post('/api/payment/checkout/refund', paymentRefundRateLimit, authenticate, refundCheckoutPayment);
-
-// Rotas legadas mantidas para compatibilidade com clientes antigos
-app.post('/api/payment/charge', paymentInitiateRateLimit, authenticate, initiateCheckoutPayment);
-app.post('/api/payment/confirm', paymentConfirmRateLimit, authenticate, confirmCheckoutPayment);
-app.post('/api/payment/refund', paymentRefundRateLimit, authenticate, refundCheckoutPayment);
-
 // Rota raiz - retorna status de saúde
 app.get('/', (req: Request, res: Response) => {
   return res.status(200).json({
@@ -1025,6 +1015,16 @@ app.get('/', (req: Request, res: Response) => {
     }
   });
 });
+
+app.post('/api/payment/checkout/initiate', paymentInitiateRateLimit, authenticate, initiateCheckoutPayment);
+app.post('/api/payment/checkout/confirm', paymentConfirmRateLimit, authenticate, confirmCheckoutPayment);
+app.get('/api/payment/checkout/:paymentId/status', paymentStatusRateLimit, authenticate, getCheckoutPaymentStatus);
+app.post('/api/payment/checkout/refund', paymentRefundRateLimit, authenticate, refundCheckoutPayment);
+
+// Rotas legadas mantidas para compatibilidade com clientes antigos
+app.post('/api/payment/charge', paymentInitiateRateLimit, authenticate, initiateCheckoutPayment);
+app.post('/api/payment/confirm', paymentConfirmRateLimit, authenticate, confirmCheckoutPayment);
+app.post('/api/payment/refund', paymentRefundRateLimit, authenticate, refundCheckoutPayment);
 
 app.use('/api', (_req: Request, res: Response) => {
   return res.status(404).json({ error: 'Rota de API nao encontrada' });

@@ -25,3 +25,7 @@ Thumbs.db
 .idea/
 .vscode/
 .vercel/
+.qodo/
+.snapshots/
+patch.debug
+patch.diff

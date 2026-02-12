@@ -1,4 +1,4 @@
-﻿# 🚗 Pneus.PrecoJusto - E-commerce de Pneus
+﻿# 🚗 Pneus Preçojusto - E-commerce de Pneus
 
 Plataforma moderna e segura para venda de pneus com integração de pagamentos, autenticação JWT e painel administrativo.
 
@@ -83,3 +83,4 @@ Proprietary - Todos os direitos reservados.
 
 **Status:** ✅ Pronto para Produção  
 **Última atualização:** 09/02/2026
+

@@ -1,0 +1,659 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+@import './responsive.css';
+
+/* Global Application Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-container-checkout {
+  background: #f4f6fb;
+}
+
+.main-content {
+  flex: 1;
+}
+
+/* Utility Classes */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 0 2rem;
+  }
+}
+
+/* Button Base Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #FDB913 0%, #FFD700 100%);
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(253, 185, 19, 0.4);
+}
+
+.btn-secondary {
+  background: #00A651;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #008C44;
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid #FDB913;
+  color: #FDB913;
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: #FDB913;
+  color: #1a1a1a;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Input Styles */
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #FDB913;
+  box-shadow: 0 0 0 3px rgba(253, 185, 19, 0.1);
+}
+
+.select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #FDB913;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #E5A50A;
+}/* Product card helpers (galerias) */
+.product-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.product-image {
+  background: #f5f6f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 1rem;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Ajustes para cards de produto (galerias e listagens) */
+.products-card img {
+  width: 100%;
+  height: 220px;
+  object-fit: contain;
+  background: #f5f6f8;
+  padding: 12px;
+}
+
+/* Gallery action buttons (HomePage) */
+.gallery-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.gallery-action-btn {
+  width: 100%;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.gallery-action-btn svg {
+  flex-shrink: 0;
+}
+
+.gallery-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.gallery-action-btn-cart {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.gallery-action-btn-cart:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.gallery-action-btn-view {
+  background: #f3f4f6;
+  color: #1f2937;
+  border-color: #e5e7eb;
+}
+
+.gallery-action-btn-view:hover {
+  background: #e5e7eb;
+}
+
+@media (max-width: 420px) {
+  .gallery-actions {
+    grid-template-columns: 1fr;
+  }
+}
+/* Hero banner sizing/responsividade */
+.hero-banner-section {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  aspect-ratio: 16 / 6;
+  min-height: 340px;
+}
+
+.hero-banner-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Hero Banner Image - Enquadramento Perfeito */
+.hero-banner-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  animation: zoomIn 15s ease-out forwards;
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Hero Banner Overlay - Elegante e Sofisticado */
+.hero-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(10, 20, 60, 0.65) 0%,
+    rgba(15, 25, 70, 0.55) 25%,
+    rgba(20, 30, 80, 0.50) 50%,
+    rgba(0, 120, 100, 0.45) 75%,
+    rgba(0, 160, 120, 0.40) 100%
+  );
+  backdrop-filter: blur(1px);
+}
+
+/* Hero Banner Content */
+.hero-banner-content {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: clamp(1.25rem, 4vw, 4rem);
+  color: white;
+}
+
+.hero-banner-inner {
+  max-width: 620px;
+  padding: clamp(1rem, 2.5vw, 1.9rem);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(8, 24, 68, 0.75), rgba(8, 24, 68, 0.45));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  animation: slideInUp 0.8s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hero Badge - Elegante */
+.hero-badge {
+  display: inline-block;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #FFD700;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 2rem;
+  backdrop-filter: blur(10px);
+  animation: fadeInDown 0.8s ease-out 0.1s both;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hero Title - Typography Elegante */
+.hero-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-size: clamp(1.7rem, 4.2vw, 3rem);
+  font-weight: 700;
+  line-height: 1.12;
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+  color: #FFFFFF;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+/* Hero Subtitle - Elegância e Clareza */
+.hero-subtitle {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: clamp(0.95rem, 1.8vw, 1.08rem);
+  font-weight: 400;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+  color: rgba(255, 255, 255, 0.95);
+  max-width: 540px;
+  letter-spacing: 0.3px;
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+/* Hero Button - Design Premium */
+.hero-button {
+  display: inline-flex;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.75rem;
+  background: linear-gradient(135deg, #FDB913 0%, #FFD700 100%);
+  color: #0a1a3c;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 24px rgba(253, 185, 19, 0.35);
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+.hero-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.hero-button span {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-button-arrow {
+  font-size: 1.25rem;
+  transition: transform 0.3s ease;
+  display: inline-block;
+}
+
+.hero-button:hover {
+  background: linear-gradient(135deg, #FFD700 0%, #FFC700 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(253, 185, 19, 0.45);
+}
+
+.hero-button:hover .hero-button-arrow {
+  transform: translateX(4px);
+}
+
+.hero-button:active {
+  transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 767px) {
+  .hero-banner-section {
+    aspect-ratio: auto;
+    min-height: 420px;
+  }
+
+  .hero-banner-content {
+    width: 100%;
+    padding: 1rem;
+  }
+
+  .hero-banner-inner {
+    width: 100%;
+    max-width: none;
+    padding: 1rem;
+    border-radius: 0.875rem;
+  }
+
+  .hero-title {
+    font-size: 1.55rem;
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+    max-width: 100%;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-button {
+    width: 100%;
+    justify-content: center;
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .hero-banner-section {
+    min-height: 380px;
+  }
+
+  .hero-banner-content {
+    padding: 3rem;
+  }
+
+  .hero-banner-inner {
+    max-width: 650px;
+  }
+}
+
+@media (min-width: 768px) {
+  .hero-banner-section {
+    aspect-ratio: 16 / 5.2;
+    min-height: 420px;
+  }
+
+  .hero-banner-content {
+    padding: 4rem;
+  }
+
+  .hero-banner-inner {
+    max-width: 700px;
+  }
+
+  .hero-badge {
+    font-size: 0.85rem;
+  }
+
+  .hero-subtitle {
+    max-width: 550px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-banner-section {
+    aspect-ratio: 16 / 4.8;
+    min-height: 480px;
+  }
+
+  .hero-banner-content {
+    padding: 5rem 4rem;
+    justify-content: flex-start;
+  }
+
+  .hero-banner-inner {
+    max-width: 680px;
+  }
+
+  .hero-title {
+    font-size: clamp(1.95rem, 2.8vw, 2.45rem);
+    line-height: 1.14;
+  }
+
+  .hero-subtitle {
+    font-size: 0.98rem;
+    line-height: 1.45;
+    max-width: 500px;
+  }
+
+  .hero-badge {
+    font-size: 0.9rem;
+    padding: 0.65rem 1.25rem;
+  }
+
+  .hero-button {
+    padding: 1rem 2.2rem;
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .hero-banner-section {
+    aspect-ratio: 16 / 4.2;
+    min-height: 520px;
+  }
+
+  .hero-banner-content {
+    padding: 5.5rem 4.5rem;
+    justify-content: flex-start;
+  }
+
+  .hero-banner-inner {
+    max-width: 720px;
+  }
+}
+
+/* Acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+  .hero-banner-image,
+  .hero-badge,
+  .hero-title,
+  .hero-subtitle,
+  .hero-button {
+    animation: none !important;
+  }
+
+  .hero-button:hover {
+    transform: none;
+  }
+
+  .hero-button:hover .hero-button-arrow {
+    transform: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .hero-title {
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+
+  .hero-badge {
+    background: rgba(255, 215, 0, 0.12);
+    border-color: rgba(255, 215, 0, 0.25);
+  }
+}
