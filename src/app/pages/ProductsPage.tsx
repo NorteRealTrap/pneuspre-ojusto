@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useProductsStore } from '../stores/products';
 import { useCartStore } from '../stores/cart';
 
@@ -16,8 +16,69 @@ export function ProductsPage() {
   } = useProductsStore();
   const { addItem } = useCartStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const searchParamsString = searchParams.toString();
+
+  // Helper function to get route-based filters
+  const getRouteBasedFilters = () => {
+    const pathname = location.pathname;
+    const filters: Record<string, string | string[]> = {};
+
+    // Map routes to category filters
+    if (pathname === '/kit-de-pneus' || pathname === '/passageiros') {
+      filters.category = 'passeio';
+    } else if (pathname === '/caminhonete-e-suv') {
+      // No specific category - show all
+    } else if (pathname.startsWith('/caminhonete-e-suv/suv')) {
+      filters.category = 'suv';
+    } else if (pathname.startsWith('/caminhonete-e-suv/caminhonete')) {
+      filters.category = 'caminhonete';
+    } else if (pathname === '/moto' || pathname.startsWith('/moto/')) {
+      filters.category = 'moto';
+    } else if (pathname === '/agricola-e-otr') {
+      filters.category = 'agricola';
+    } else if (pathname === '/camaras-de-ar' || pathname.startsWith('/camaras-de-ar/')) {
+      // Extract aro number from route like /camaras-de-ar/aro-13
+      const aroMatch = pathname.match(/aro-(\d+)/);
+      if (aroMatch) {
+        filters.diameter = aroMatch[1];
+      }
+    } else if (pathname === '/marcas' || pathname.startsWith('/marcas/')) {
+      // Extract brand from route like /marcas/michelin
+      const brandMatch = pathname.match(/\/marcas\/(.+)/);
+      if (brandMatch) {
+        filters.brand = decodeURIComponent(brandMatch[1]);
+      }
+    }
+
+    return filters;
+  };
+
+  // Helper function to get page title from route
+  const getPageTitle = () => {
+    const pathname = location.pathname;
+
+    if (pathname === '/kit-de-pneus' || pathname === '/passageiros') return 'Pneus para Automoveis';
+    if (pathname === '/caminhonete-e-suv') return 'Pneus para Caminhonete e SUV';
+    if (pathname.includes('/suv')) return 'Pneus para SUV';
+    if (pathname.includes('/caminhonete')) return 'Pneus para Caminhonete';
+    if (pathname === '/moto' || pathname.includes('/moto')) return 'Pneus para Moto';
+    if (pathname === '/agricola-e-otr') return 'Pneus Agricola e OTR';
+    if (pathname === '/camaras-de-ar') return 'Camaras de Ar';
+    if (pathname.includes('/camaras-de-ar/aro-')) {
+      const aroMatch = pathname.match(/aro-(\d+)/);
+      if (aroMatch) return `Camaras de Ar - Aro ${aroMatch[1]}`;
+    }
+    if (pathname === '/marcas') return 'Todas as Marcas';
+    if (pathname.startsWith('/marcas/')) {
+      const brandMatch = pathname.match(/\/marcas\/(.+)/);
+      if (brandMatch) return `Pneus ${decodeURIComponent(brandMatch[1])}`;
+    }
+    if (pathname === '/produtos' || pathname === '/products') return 'Catalogo de Pneus';
+
+    return 'Catalogo de Pneus';
+  };
 
   useEffect(() => {
     void fetchProducts(true);
@@ -32,17 +93,20 @@ export function ProductsPage() {
     const diameter = searchParams.get('diameter') || '';
     const season = searchParams.get('season') || '';
 
+    // Get filters from route if no query params
+    const routeFilters = getRouteBasedFilters();
+
     resetFilters();
     setFilters({
       search,
-      category: category ? [category] : [],
-      brand: brand ? [brand] : [],
+      category: category ? [category] : (typeof routeFilters.category === 'string' ? [routeFilters.category] : []),
+      brand: brand ? [brand] : (typeof routeFilters.brand === 'string' ? [routeFilters.brand] : []),
       width: width ? [width] : [],
       profile: profile ? [profile] : [],
-      diameter: diameter ? [diameter] : [],
+      diameter: diameter ? [diameter] : (typeof routeFilters.diameter === 'string' ? [routeFilters.diameter] : []),
       season: season ? [season] : [],
     });
-  }, [searchParamsString, resetFilters, setFilters]);
+  }, [searchParamsString, location.pathname, resetFilters, setFilters]);
 
   const categories = ['passeio', 'suv', 'caminhonete', 'van', 'moto'];
   const brands = Array.from(new Set(products.map((product) => product.brand))).sort();
@@ -69,7 +133,7 @@ export function ProductsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Catalogo de Pneus</h1>
+      <h1 className="text-3xl font-bold mb-8">{getPageTitle()}</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="md:col-span-1">

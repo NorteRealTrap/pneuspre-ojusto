@@ -24,7 +24,7 @@ export function Footer() {
             </p>
             <div className="footer-social">
               <a
-                href="https://wa.me/5511999999999"
+                href="https://wa.me/5537998464172"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-link whatsapp"
@@ -33,7 +33,7 @@ export function Footer() {
                 <MessageCircle size={20} />
               </a>
               <a
-                href="https://instagram.com/premiumshop"
+                href="https://www.instagram.com/pneugreen_"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-link instagram"
@@ -42,7 +42,7 @@ export function Footer() {
                 <Instagram size={20} />
               </a>
               <a
-                href="https://facebook.com/premiumshop"
+                href="https://www.facebook.com/usepneugreen?mibextid=LQQJ4d"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-link facebook"
@@ -87,16 +87,16 @@ export function Footer() {
             <h4 className="footer-section-title">Informacoes</h4>
             <ul className="footer-links">
               <li>
-                <Link to="/faq">Duvidas Frequentes</Link>
+                <Link to="/frete-e-entrega">Politica de Entrega</Link>
               </li>
               <li>
-                <Link to="/shipping">Politica de Entrega</Link>
+                <Link to="/politica-de-troca-e-devolucao">Trocas e Devolucoes</Link>
               </li>
               <li>
-                <Link to="/returns">Trocas e Devolucoes</Link>
+                <Link to="/politica-de-garantia">Garantia dos Produtos</Link>
               </li>
               <li>
-                <Link to="/warranty">Garantia dos Produtos</Link>
+                <Link to="/contato">Fale Conosco</Link>
               </li>
             </ul>
           </div>
@@ -110,7 +110,7 @@ export function Footer() {
               </li>
               <li>
                 <Phone size={16} />
-                <a href="tel:+5511999999999">(11) 99999-9999</a>
+                <a href="tel:+553799846417">(37) 99846-4172</a>
               </li>
               <li>
                 <Mail size={16} />
@@ -143,18 +143,18 @@ export function Footer() {
           <div className="footer-bottom-content">
             <p className="footer-copyright">(c) {currentYear} Pneus.PrecoJusto. Todos os direitos reservados.</p>
             <div className="footer-legal">
-              <Link to="/privacy">Politica de Privacidade</Link>
+              <Link to="/politica-de-privacidade">Politica de Privacidade</Link>
               <span className="separator">-</span>
-              <Link to="/terms">Termos de Uso</Link>
+              <Link to="/politica-de-troca-e-devolucao">Termos de Uso</Link>
               <span className="separator">-</span>
-              <Link to="/cookies">Cookies</Link>
+              <Link to="/contato">Contato</Link>
             </div>
           </div>
         </div>
       </div>
 
       <a
-        href="https://wa.me/5511999999999?text=Ola! Gostaria de informacoes sobre pneus."
+        href="https://wa.me/5537998464172?text=Ola! Gostaria de informacoes sobre pneus."
         target="_blank"
         rel="noopener noreferrer"
         className="whatsapp-float"
