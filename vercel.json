@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "buildCommand": "cd backend && npm run build",
+  "outputDirectory": "backend/dist",
+  "framework": "express"
+}
