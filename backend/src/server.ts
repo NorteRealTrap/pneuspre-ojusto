@@ -1013,6 +1013,19 @@ app.post('/api/payment/charge', paymentInitiateRateLimit, authenticate, initiate
 app.post('/api/payment/confirm', paymentConfirmRateLimit, authenticate, confirmCheckoutPayment);
 app.post('/api/payment/refund', paymentRefundRateLimit, authenticate, refundCheckoutPayment);
 
+// Rota raiz - retorna status de saúde
+app.get('/', (req: Request, res: Response) => {
+  return res.status(200).json({
+    status: 'ok',
+    message: 'PneusPrecojusto Backend v1.0',
+    endpoints: {
+      health: '/api/health',
+      loginBanner: '/api/public/login-banner',
+      payment: '/api/payment/*'
+    }
+  });
+});
+
 app.use('/api', (_req: Request, res: Response) => {
   return res.status(404).json({ error: 'Rota de API nao encontrada' });
 });
