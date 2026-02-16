@@ -19,10 +19,15 @@ import {
   Sparkles,
   Link2,
   Library,
+  RefreshCw,
+  RotateCcw,
+  Menu,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 import { useProductsStore, type Product, type ProductInput } from '../stores/products';
 import { useSiteConfigStore, type SiteConfig } from '../stores/siteConfig';
+import { ordersService } from '../../services/supabase';
+import { sanitizeImageUrl } from '../utils/urlSafety';
 import './DashboardPage.css';
 
 function createEmptyProduct(): ProductInput {
@@ -57,7 +62,10 @@ function normalizeProductPayload(input: ProductInput): ProductInput {
     diameter: input.diameter.trim(),
     load_index: input.load_index.trim(),
     speed_rating: input.speed_rating.trim(),
-    image: input.image.trim() || 'https://images.unsplash.com/photo-1606937933187-6f42b29de806?w=400&h=400&fit=crop',
+    image: sanitizeImageUrl(
+      input.image.trim(),
+      'https://images.unsplash.com/photo-1606937933187-6f42b29de806?w=400&h=400&fit=crop'
+    ),
     features: (input.features || []).filter((feature) => feature.trim().length > 0),
     description: input.description?.trim() || '',
     old_price: input.old_price && input.old_price > 0 ? input.old_price : undefined,
@@ -88,6 +96,13 @@ function productToInput(product: Product): ProductInput {
   };
 }
 
+function formatDateTimeLabel(value: string | null): string {
+  if (!value) return 'sem referencia';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'sem referencia';
+  return parsed.toLocaleString('pt-BR');
+}
+
 export function DashboardPage() {
   const { profile, isAuthenticated } = useAuthStore();
   const {
@@ -99,7 +114,15 @@ export function DashboardPage() {
     deleteProduct,
   } = useProductsStore();
 
-  const { config: siteConfig, updateConfig, resetConfig } = useSiteConfigStore();
+  const {
+    config: siteConfig,
+    updateConfig,
+    resetConfig,
+    loadConfig,
+    saveConfig,
+    syncStatus,
+    lastSyncError,
+  } = useSiteConfigStore();
   const [featureDraft, setFeatureDraft] = useState({ icon: 'Star', title: '', description: '' });
 
   const fontOptions = ['Inter', 'Poppins', 'Montserrat', 'Space Grotesk', 'Roboto Slab', 'Playfair Display'];
@@ -144,34 +167,107 @@ export function DashboardPage() {
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'settings'>('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [orderSummary, setOrderSummary] = useState({
+    confirmedRevenue: 0,
+    pendingRevenue: 0,
+    confirmedOrders: 0,
+    pendingOrders: 0,
+    cancelledOrders: 0,
+    totalOrders: 0,
+  });
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState('');
+  const [summaryLastUpdatedAt, setSummaryLastUpdatedAt] = useState<string | null>(null);
+  const [resettingRevenueBaseline, setResettingRevenueBaseline] = useState(false);
 
   const [newProduct, setNewProduct] = useState<ProductInput>(createEmptyProduct());
   const [featuresInput, setFeaturesInput] = useState('');
+  const sanitizedNewProductImage = sanitizeImageUrl(newProduct.image);
+  const sanitizedEditingProductImage = sanitizeImageUrl(editingProduct?.image || '');
 
   useEffect(() => {
     void fetchProducts();
-  }, [fetchProducts]);
+    void loadConfig();
+  }, [fetchProducts, loadConfig]);
+
+  const fetchOrderSummary = async (since: string | null) => {
+    setSummaryLoading(true);
+    setSummaryError('');
+
+    const { data, error } = await ordersService.getAdminSummary({ since });
+    if (error || !data) {
+      setSummaryError(error?.message || 'Nao foi possivel carregar as metricas do painel.');
+      setSummaryLoading(false);
+      return false;
+    }
+
+    setOrderSummary(data);
+    setSummaryLastUpdatedAt(new Date().toISOString());
+    setSummaryLoading(false);
+    return true;
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated || profile?.role !== 'admin') return;
+    void fetchOrderSummary(siteConfig.revenueBaselineAt);
+  }, [isAuthenticated, profile?.role, siteConfig.revenueBaselineAt]);
+
+  const handleRefreshSummary = async () => {
+    await fetchOrderSummary(siteConfig.revenueBaselineAt);
+  };
+
+  const handleResetRevenueBaseline = async () => {
+    const accepted = confirm(
+      'Isso vai zerar o faturamento do painel e iniciar a contagem a partir de agora. Deseja continuar?'
+    );
+    if (!accepted) return;
+
+    setResettingRevenueBaseline(true);
+
+    try {
+      const nowIso = new Date().toISOString();
+      updateConfig({ revenueBaselineAt: nowIso });
+      await saveConfig();
+
+      const persistedError = useSiteConfigStore.getState().lastSyncError;
+      if (persistedError) {
+        throw new Error(persistedError);
+      }
+
+      await fetchOrderSummary(nowIso);
+    } catch (error: any) {
+      const message = String(error?.message || 'Falha ao zerar faturamento.');
+      setSummaryError(message);
+      alert(`Nao foi possivel zerar o faturamento: ${message}`);
+    } finally {
+      setResettingRevenueBaseline(false);
+    }
+  };
 
   if (!isAuthenticated || profile?.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
 
-  const totalRevenue = products.reduce(
-    (sum, product) => sum + product.price * Math.max(0, 100 - product.stock),
-    0
-  );
+  const totalRevenue = orderSummary.confirmedRevenue;
   const totalProducts = products.length;
   const lowStockProducts = products.filter((product) => product.stock < 10);
   const featuredProducts = products.filter((product) => product.featured).length;
   const totalCategories = new Set(products.map((product) => product.category)).size;
+  const baselineMessage = siteConfig.revenueBaselineAt
+    ? `Faturamento contabilizado desde ${formatDateTimeLabel(siteConfig.revenueBaselineAt)}.`
+    : 'Faturamento contabilizado com todo o historico de pedidos.';
+  const lastUpdatedMessage = summaryLastUpdatedAt
+    ? `Ultima atualizacao: ${formatDateTimeLabel(summaryLastUpdatedAt)}.`
+    : 'Metricas ainda nao atualizadas nesta sessao.';
 
   const stats = [
     {
       icon: <DollarSign />,
-      label: 'Receita Estimada',
+      label: 'Receita Confirmada',
       value: `R$ ${totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      change: '+12%',
+      change: `${orderSummary.confirmedOrders} pedidos pagos`,
       color: '#FF6B35',
     },
     {
@@ -192,7 +288,7 @@ export function DashboardPage() {
       icon: <Users />,
       label: 'Categorias',
       value: totalCategories.toString(),
-      change: 'ativas',
+      change: `${orderSummary.totalOrders} pedidos`,
       color: '#00C853',
     },
   ];
@@ -275,42 +371,118 @@ export function DashboardPage() {
     alert('Produto excluido com sucesso!');
   };
 
-  return (
-    <div className="dashboard-page">
-      <div className="container">
-        <div className="dashboard-header">
-          <div>
-            <h1>Painel Administrativo</h1>
-            <p>Bem-vindo de volta, {profile?.name || 'Administrador'}!</p>
-          </div>
-        </div>
+  const topSellerIds = siteConfig.topSellerProductIds || [];
+  const highlightIds = siteConfig.highlightProductIds || [];
 
-        <div className="dashboard-tabs">
+  const persistShowcaseConfig = async (updates: Partial<SiteConfig>) => {
+    updateConfig(updates);
+    await saveConfig();
+    const persistedError = useSiteConfigStore.getState().lastSyncError;
+    if (persistedError) {
+      alert(`Nao foi possivel salvar as regras de vitrine: ${persistedError}`);
+    }
+  };
+
+  const toggleShowcaseProduct = (showcase: 'topSellerProductIds' | 'highlightProductIds', productId: string) => {
+    const currentIds = siteConfig[showcase] || [];
+    const exists = currentIds.includes(productId);
+    const nextIds = exists ? currentIds.filter((id) => id !== productId) : [...currentIds, productId];
+    void persistShowcaseConfig({ [showcase]: nextIds } as Partial<SiteConfig>);
+  };
+
+  const adminNavItems: Array<{ key: 'overview' | 'products' | 'settings'; label: string; icon: JSX.Element }> = [
+    { key: 'overview', label: 'Dashboard', icon: <BarChart3 size={18} /> },
+    { key: 'products', label: 'Produtos', icon: <Package size={18} /> },
+    { key: 'settings', label: 'Config. do Site', icon: <Users size={18} /> },
+  ];
+  const activeSectionLabel = adminNavItems.find((item) => item.key === activeTab)?.label || 'Dashboard';
+  const currentDateLabel = new Date().toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  return (
+    <div className="admin-shell">
+      <aside className={`admin-sidebar ${sidebarOpen ? 'is-open' : 'is-collapsed'}`}>
+        <div className="admin-sidebar-brand">
+          <div className="admin-brand-badge">A</div>
+          {sidebarOpen ? (
+            <div className="admin-brand-copy">
+              <strong>Admin Panel</strong>
+              <small>Pneus Preco Justo</small>
+            </div>
+          ) : null}
           <button
-            className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
+            className="admin-sidebar-toggle"
+            type="button"
+            aria-label="Alternar menu lateral"
+            onClick={() => setSidebarOpen((current) => !current)}
           >
-            <BarChart3 size={20} />
-            Visao Geral
-          </button>
-          <button
-            className={`tab ${activeTab === 'products' ? 'active' : ''}`}
-            onClick={() => setActiveTab('products')}
-          >
-            <Package size={20} />
-            Produtos
-          </button>
-          <button
-            className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            <Users size={20} />
-            Configuracoes
+            <Menu size={16} />
           </button>
         </div>
+        <nav className="admin-sidebar-nav">
+          {adminNavItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`admin-sidebar-item ${activeTab === item.key ? 'active' : ''}`}
+              onClick={() => setActiveTab(item.key)}
+            >
+              {item.icon}
+              {sidebarOpen ? <span>{item.label}</span> : null}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="admin-main">
+        <header className="admin-topbar">
+          <h2>{activeSectionLabel}</h2>
+          <span>{currentDateLabel}</span>
+        </header>
+
+        <div className="admin-main-scroll">
+          <div className="dashboard-page">
+            <div className="container">
+              <div className="dashboard-header">
+                <div>
+                  <h1>Painel Administrativo</h1>
+                  <p>Bem-vindo de volta, {profile?.name || 'Administrador'}!</p>
+                </div>
+              </div>
 
         {activeTab === 'overview' && (
           <>
+            <div className="overview-toolbar">
+              <div className="overview-toolbar-copy">
+                <h2>Controle de faturamento</h2>
+                <p>{baselineMessage}</p>
+                <p className="overview-toolbar-meta">{lastUpdatedMessage}</p>
+                {summaryError ? <p className="overview-toolbar-error">{summaryError}</p> : null}
+              </div>
+              <div className="overview-toolbar-actions">
+                <button
+                  className="btn btn-outline"
+                  onClick={() => void handleRefreshSummary()}
+                  disabled={summaryLoading || resettingRevenueBaseline}
+                >
+                  <RefreshCw size={18} className={summaryLoading ? 'dashboard-spin' : ''} />
+                  Atualizar metricas
+                </button>
+                <button
+                  className="btn btn-outline danger"
+                  onClick={() => void handleResetRevenueBaseline()}
+                  disabled={summaryLoading || resettingRevenueBaseline}
+                >
+                  <RotateCcw size={18} />
+                  {resettingRevenueBaseline ? 'Zerando...' : 'Zerar faturamento'}
+                </button>
+              </div>
+            </div>
+
             <div className="stats-grid">
               {stats.map((stat, index) => (
                 <div key={index} className="stat-card" style={{ '--stat-color': stat.color } as CSSProperties}>
@@ -347,7 +519,7 @@ export function DashboardPage() {
                         <tr key={product.id}>
                           <td>
                             <div className="product-cell">
-                              <img src={product.image} alt={product.model} />
+                              <img src={sanitizeImageUrl(product.image)} alt={product.model} />
                               <div>
                                 <strong>{product.brand}</strong>
                                 <span>{product.model}</span>
@@ -376,12 +548,43 @@ export function DashboardPage() {
         {activeTab === 'products' && (
           <div className="dashboard-content">
             <div className="content-header">
-              <h2>Gerenciar Produtos</h2>
+              <div>
+                <h2>Gerenciar Produtos</h2>
+                <p className="products-showcase-hint">
+                  Defina produtos fixos para as vitrines da home e use mesclagem automatica para preencher faltantes.
+                </p>
+              </div>
               <button className="btn btn-primary" onClick={() => setShowAddProduct(true)} disabled={submitting}>
                 <Plus size={20} />
                 Adicionar Produto
               </button>
             </div>
+
+            <div className="products-showcase-settings">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={siteConfig.autoMergeShowcaseSections}
+                  onChange={() =>
+                    void persistShowcaseConfig({
+                      autoMergeShowcaseSections: !siteConfig.autoMergeShowcaseSections,
+                    })
+                  }
+                />
+                <Sparkles size={16} /> Mesclar automaticamente as seções da home quando faltar produto
+              </label>
+              <div className="products-showcase-counts">
+                <span>Mais vendidos definidos: {topSellerIds.length}</span>
+                <span>Destaques definidos: {highlightIds.length}</span>
+              </div>
+            </div>
+            <p className={`sync-status ${syncStatus === 'error' ? 'error' : ''}`}>
+              {lastSyncError
+                ? `Falha ao salvar regras de vitrine: ${lastSyncError}`
+                : syncStatus === 'saving'
+                  ? 'Salvando regras de vitrine...'
+                  : 'Regras de vitrine sincronizadas.'}
+            </p>
 
             {loading ? (
               <div className="bg-white rounded-lg shadow p-6">Carregando produtos...</div>
@@ -395,6 +598,8 @@ export function DashboardPage() {
                       <th>Categoria</th>
                       <th>Preco</th>
                       <th>Estoque</th>
+                      <th>Mais Vendidos</th>
+                      <th>Destaque</th>
                       <th>Acoes</th>
                     </tr>
                   </thead>
@@ -403,7 +608,7 @@ export function DashboardPage() {
                       <tr key={product.id}>
                         <td>
                           <div className="product-cell">
-                            <img src={product.image} alt={product.model} />
+                            <img src={sanitizeImageUrl(product.image)} alt={product.model} />
                             <div>
                               <strong>{product.brand}</strong>
                               <span>{product.model}</span>
@@ -425,6 +630,26 @@ export function DashboardPage() {
                           >
                             {product.stock}
                           </span>
+                        </td>
+                        <td>
+                          <label className="table-flag-toggle">
+                            <input
+                              type="checkbox"
+                              checked={topSellerIds.includes(product.id)}
+                              onChange={() => toggleShowcaseProduct('topSellerProductIds', product.id)}
+                            />
+                            <span>Vitrine</span>
+                          </label>
+                        </td>
+                        <td>
+                          <label className="table-flag-toggle">
+                            <input
+                              type="checkbox"
+                              checked={highlightIds.includes(product.id)}
+                              onChange={() => toggleShowcaseProduct('highlightProductIds', product.id)}
+                            />
+                            <span>Destaque</span>
+                          </label>
                         </td>
                         <td>
                           <div className="action-buttons">
@@ -461,11 +686,30 @@ export function DashboardPage() {
                     <p>Logo, tipografia e dados principais da vitrine.</p>
                   </div>
                 </div>
-                <button className="btn btn-outline" onClick={resetConfig}>
-                  <Sparkles size={18} />
-                  Restaurar padrão
-                </button>
+                <div className="settings-actions">
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => {
+                      void saveConfig();
+                    }}
+                    disabled={syncStatus === 'saving'}
+                  >
+                    <Save size={18} />
+                    {syncStatus === 'saving' ? 'Salvando...' : 'Salvar no banco'}
+                  </button>
+                  <button className="btn btn-outline" onClick={resetConfig} disabled={syncStatus === 'saving'}>
+                    <Sparkles size={18} />
+                    Restaurar padrao
+                  </button>
+                </div>
               </div>
+              <p className={`sync-status ${syncStatus === 'error' ? 'error' : ''}`}>
+                {lastSyncError
+                  ? `Falha de persistencia: ${lastSyncError}`
+                  : syncStatus === 'saving'
+                    ? 'Sincronizando configuracoes no banco...'
+                    : 'Configuracoes sincronizadas com persistencia de banco e fallback local.'}
+              </p>
               <div className="settings-form two-col">
                 <div className="form-group">
                   <label>Nome da Loja</label>
@@ -546,7 +790,7 @@ export function DashboardPage() {
                 {fontOptions.map((font) => (
                   <button
                     key={font}
-                    className={pill }
+                    className={`pill ${siteConfig.primaryFont === font ? 'active' : ''}`}
                     onClick={() => handleConfigChange('primaryFont', font)}
                   >
                     {font}
@@ -619,7 +863,7 @@ export function DashboardPage() {
                 {cardStyles.map((option) => (
                   <button
                     key={option.value}
-                    className={pill }
+                    className={`pill ${siteConfig.productCardStyle === option.value ? 'active' : ''}`}
                     onClick={() => handleConfigChange('productCardStyle', option.value)}
                   >
                     {option.label}
@@ -643,7 +887,7 @@ export function DashboardPage() {
                 {layoutOptions.map((option) => (
                   <button
                     key={option.value}
-                    className={pill }
+                    className={`pill ${siteConfig.layoutStyle === option.value ? 'active' : ''}`}
                     onClick={() => handleConfigChange('layoutStyle', option.value)}
                   >
                     {option.label}
@@ -655,7 +899,7 @@ export function DashboardPage() {
                 {galleryOptions.map((option) => (
                   <button
                     key={option.value}
-                    className={pill }
+                    className={`pill ${siteConfig.galleryLayout === option.value ? 'active' : ''}`}
                     onClick={() => handleConfigChange('galleryLayout', option.value)}
                   >
                     {option.label}
@@ -1027,10 +1271,10 @@ export function DashboardPage() {
                         ? ' Links externos habilitados no painel.'
                         : ' Ative permissões em Configurações > SEO e Inteligência.'}
                     </small>
-                    {newProduct.image && (
+                    {sanitizedNewProductImage && (
                       <div className="image-preview">
                         <img
-                          src={newProduct.image}
+                          src={sanitizedNewProductImage}
                           alt={newProduct.model || 'Pré-visualização do produto'}
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
@@ -1133,10 +1377,10 @@ export function DashboardPage() {
                       className="input"
                     />
                     <small className="input-hint">Cole um link público (https://) ou CDN segura.</small>
-                    {editingProduct.image && (
+                    {sanitizedEditingProductImage && (
                       <div className="image-preview">
                         <img
-                          src={editingProduct.image}
+                          src={sanitizedEditingProductImage}
                           alt={editingProduct.model}
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
@@ -1167,6 +1411,9 @@ export function DashboardPage() {
             </div>
           </div>
         )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

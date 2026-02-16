@@ -5,6 +5,35 @@
 -- e rastreamento de pedidos/transações com Blackcat
 -- ============================================================
 
+
+-- Pre-requisito para gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
+-- Base de catalogo usada por outras migrations (pedido_itens/order_items).
+CREATE TABLE IF NOT EXISTS public.products (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  brand VARCHAR(100) NOT NULL,
+  model VARCHAR(100) NOT NULL,
+  width VARCHAR(10) NOT NULL,
+  profile VARCHAR(10) NOT NULL,
+  diameter VARCHAR(10) NOT NULL,
+  load_index VARCHAR(10) NOT NULL,
+  speed_rating VARCHAR(10) NOT NULL,
+  price DECIMAL(10, 2) NOT NULL,
+  old_price DECIMAL(10, 2),
+  stock INTEGER NOT NULL DEFAULT 0,
+  image TEXT NOT NULL,
+  features TEXT[] DEFAULT ARRAY[]::TEXT[],
+  category VARCHAR(50) NOT NULL,
+  season VARCHAR(50) NOT NULL DEFAULT 'all-season',
+  runflat BOOLEAN NOT NULL DEFAULT FALSE,
+  featured BOOLEAN NOT NULL DEFAULT FALSE,
+  description TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP
+);
 -- Criar tabela de endereços
 CREATE TABLE IF NOT EXISTS enderecos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

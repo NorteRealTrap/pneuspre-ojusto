@@ -37,6 +37,28 @@ export interface CheckoutPaymentStatusResponse {
   expiresAt: string | null;
 }
 
+export interface CreditCardPaymentData {
+  holderName: string;
+  cardNumber: string;
+  expiryMonth: string;
+  expiryYear: string;
+  cvv: string;
+  installments: number;
+}
+
+export interface PixPaymentData {
+  payerName: string;
+  payerCpf: string;
+}
+
+export interface BoletoPaymentData {
+  payerName: string;
+  payerCpf: string;
+  payerEmail: string;
+}
+
+export type CheckoutPaymentData = CreditCardPaymentData | PixPaymentData | BoletoPaymentData;
+
 const ensureSessionToken = async () => {
   const session = await authService.getSession();
   const token = session?.access_token;
@@ -79,7 +101,8 @@ export const paymentService = {
     amount: number,
     orderId: string,
     paymentMethod: 'credit_card' | 'pix' | 'boleto',
-    idempotencyKey?: string
+    idempotencyKey?: string,
+    paymentData?: CheckoutPaymentData
   ): Promise<CheckoutPaymentInitResponse> => {
     const token = await ensureSessionToken();
     const normalizedIdempotencyKey = idempotencyKey || `checkout-${orderId}`;
@@ -97,6 +120,7 @@ export const paymentService = {
         paymentMethod,
         currency: 'BRL',
         idempotencyKey: normalizedIdempotencyKey,
+        paymentData,
       }),
     });
 

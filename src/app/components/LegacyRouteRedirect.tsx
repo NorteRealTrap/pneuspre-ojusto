@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 
 const EXACT_REDIRECTS: Record<string, string> = {
+  '/produtos': '/products',
   '/quem-somos': '/about',
   '/seguranca': '/security',
   '/frete-e-entrega': '/shipping',
@@ -13,11 +14,15 @@ const EXACT_REDIRECTS: Record<string, string> = {
   '/contato': '/contact',
   '/my-account/login': '/login',
   '/cadastro': '/register',
+  '/meus-pedidos': '/orders',
   '/central-do-cliente': '/account',
   '/loja/central_anteriores.php': '/orders',
   '/loja/central_dados.php': '/account',
   '/loja/redirect_cart_service.php': '/cart',
+  '/loja/logout.php': '/login',
+  '/finalizar-compra': '/checkout',
   '/kit-de-pneus': '/products?search=kit',
+  '/passageiros': '/products?category=passeio',
   '/marcas': '/products',
   '/caminhonete-e-suv': '/products?category=suv',
   '/caminhonete-e-suv/caminhonete': '/products?category=caminhonete',
@@ -28,10 +33,10 @@ const EXACT_REDIRECTS: Record<string, string> = {
   '/pneu-off-road': '/products?category=moto&search=off-road',
   '/pneu-trail': '/products?category=moto&search=trail',
   '/moto/valvula': '/products?category=moto&search=valvula',
-  '/caminhao-e-onibus': '/products?search=caminhao',
-  '/agricola-e-otr': '/products?search=agricola',
-  '/agricola-e-otr/agricola': '/products?search=agricola',
-  '/agricola-e-otr/otr': '/products?search=otr',
+  '/caminhao-e-onibus': '/products?category=caminhao,onibus',
+  '/agricola-e-otr': '/products?category=agricola,otr',
+  '/agricola-e-otr/agricola': '/products?category=agricola',
+  '/agricola-e-otr/otr': '/products?category=otr',
   '/shampoo-automotivo': '/products?search=shampoo',
   '/camaras-de-ar': '/products?search=camara',
 };
@@ -70,8 +75,35 @@ function toSearchTerm(pathname: string) {
   return withoutPrefix || joined.replace(/[-_/]+/g, ' ').trim();
 }
 
-function resolveLegacyPath(pathname: string) {
+function resolveLegacyPath(pathname: string, search = '') {
   const normalized = normalizePathname(pathname);
+
+  if (normalized === '/loja/busca.php' || normalized === '/busca') {
+    const query = new URLSearchParams(search);
+    const rawSearch = query.get('palavra_busca') || query.get('search') || query.get('palavra') || '';
+    const normalizedSearch = rawSearch.trim();
+    if (normalizedSearch) {
+      return `/products?search=${encodeURIComponent(normalizedSearch)}`;
+    }
+    return '/products';
+  }
+
+  if (normalized === '/loja/produto.php') {
+    const query = new URLSearchParams(search);
+    const rawReference = query.get('id') || query.get('IdProd') || query.get('produto') || '';
+    if (rawReference.trim()) {
+      return `/products?search=${encodeURIComponent(rawReference.trim())}`;
+    }
+    return '/products';
+  }
+
+  if (normalized.startsWith('/product/')) {
+    const productId = normalized.split('/')[2];
+    if (productId) {
+      return `/product/${productId}`;
+    }
+  }
+
   const exact = EXACT_REDIRECTS[normalized];
   if (exact) return exact;
 
@@ -109,7 +141,7 @@ function resolveLegacyPath(pathname: string) {
 
 export function LegacyRouteRedirect() {
   const location = useLocation();
-  const target = resolveLegacyPath(location.pathname);
+  const target = resolveLegacyPath(location.pathname, location.search);
 
   if (!location.search || target.includes('?')) {
     return <Navigate to={target} replace />;
@@ -117,4 +149,3 @@ export function LegacyRouteRedirect() {
 
   return <Navigate to={`${target}${location.search}`} replace />;
 }
-

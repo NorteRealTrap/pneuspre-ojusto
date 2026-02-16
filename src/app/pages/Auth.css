@@ -40,9 +40,18 @@
   box-shadow: 0 16px 0 #111;
 }
 
+.login-page .login-container-no-banner {
+  grid-template-columns: 1fr;
+  max-width: 560px;
+}
+
 .login-page .login-card {
   background: #fff8cc;
   border-right: 3px solid #111;
+}
+
+.login-page .login-container-no-banner .login-card {
+  border-right: 0;
 }
 
 .login-page .auth-header h1 {
@@ -181,10 +190,9 @@
 
 .forgot-page .auth-header h1,
 .reset-page .auth-header h1 {
-  background: linear-gradient(135deg, #0f172a 0%, #166534 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: none;
+  color: #0f172a;
+  -webkit-text-fill-color: currentColor;
 }
 
 .forgot-illustration,
@@ -226,12 +234,10 @@
 .auth-header h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #145a32;
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #00C853 0%, #F7B801 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: none;
+  -webkit-text-fill-color: currentColor;
 }
 
 .auth-header p {
@@ -296,7 +302,7 @@
 .input-icon {
   position: absolute;
   left: 1rem;
-  color: #999;
+  color: #475569;
   pointer-events: none;
 }
 
@@ -308,6 +314,12 @@
   font-size: 0.95rem;
   transition: all 0.3s ease;
   background: white;
+  color: #111827;
+}
+
+.form-input::placeholder {
+  color: #475569;
+  opacity: 1;
 }
 
 .form-input:focus {
@@ -321,7 +333,7 @@
   right: 1rem;
   background: none;
   border: none;
-  color: #999;
+  color: #475569;
   cursor: pointer;
   padding: 0.5rem;
   display: flex;

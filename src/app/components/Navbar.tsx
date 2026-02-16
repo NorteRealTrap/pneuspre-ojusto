@@ -1,4 +1,4 @@
-﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
+﻿import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ChevronDown,
@@ -124,6 +124,7 @@ export function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -156,6 +157,18 @@ export function Navbar() {
     setIsUserMenuOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!userMenuRef.current) return;
+      if (!userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
     const normalized = searchQuery.trim();
@@ -174,29 +187,31 @@ export function Navbar() {
   };
 
   return (
-    <header className="pg-header-root">
+    <header className={`pg-header-root ${isUserMenuOpen ? 'user-menu-open' : ''}`}>
       <section className="pg-topbar">
         <div className="container pg-topbar-row">
-          <div className="pg-topbar-highlight">
-            <Truck size={15} />
-            <Link to="/frete-e-entrega">Frete Gratis. Ver regras</Link>
-          </div>
-          <div className="pg-topbar-highlight">
-            <ShieldCheck size={15} />
-            <span>Entrega Garantida</span>
-          </div>
-          <div className="pg-topbar-highlight pg-topbar-support">
-            <Headphones size={15} />
-            <span>
-              Precisa de ajuda?{' '}
-              <a href={`https://wa.me/${config.whatsapp}`} target="_blank" rel="noopener noreferrer">
-                {config.phone}
-              </a>
-            </span>
+          <div className="pg-topbar-left">
+            <div className="pg-topbar-highlight">
+              <Truck size={15} />
+              <Link to="/frete-e-entrega">Frete Gratis. Ver regras</Link>
+            </div>
+            <div className="pg-topbar-highlight">
+              <ShieldCheck size={15} />
+              <span>Entrega Garantida</span>
+            </div>
+            <div className="pg-topbar-highlight pg-topbar-support">
+              <Headphones size={15} />
+              <span>
+                Precisa de ajuda?{' '}
+                <a href={`https://wa.me/${config.whatsapp}`} target="_blank" rel="noopener noreferrer">
+                  {config.phone}
+                </a>
+              </span>
+            </div>
           </div>
           <div className="pg-topbar-links">
-            <Link to="/orders">Meus Pedidos</Link>
             <Link to="/account">Minha Conta</Link>
+            <Link to="/orders">Meus Pedidos</Link>
           </div>
         </div>
       </section>
@@ -212,17 +227,17 @@ export function Navbar() {
             {isMobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
 
-          <Link to="/" className="pg-logo" aria-label="PneuGreen home">
+          <Link to="/" className="pg-logo" aria-label={`${config.storeName || 'Pneus PrecoJusto'} home`}>
             <img
               src={logoUrl}
-              alt="PneuGreen"
+              alt={config.storeName || 'Pneus PrecoJusto'}
               onError={(event) => {
                 event.currentTarget.style.display = 'none';
                 const fallback = event.currentTarget.nextElementSibling as HTMLElement | null;
                 if (fallback) fallback.style.display = 'inline-block';
               }}
             />
-            <span className="pg-logo-fallback">PneuGreen</span>
+            <span className="pg-logo-fallback">{config.storeName || 'Pneus PrecoJusto'}</span>
           </Link>
 
           <form className="pg-search" onSubmit={submitSearch}>
@@ -239,26 +254,6 @@ export function Navbar() {
           </form>
 
           <div className="pg-main-actions">
-            <div className="pg-account-desktop">
-              {isAuthenticated ? (
-                <>
-                  <p>
-                    <Link to="/account">Minha Conta</Link>
-                  </p>
-                  <button type="button" onClick={handleLogout}>
-                    Sair
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p>
-                    <Link to="/login">Entre</Link> ou
-                  </p>
-                  <Link to="/register">Cadastre-se</Link>
-                </>
-              )}
-            </div>
-
             <Link to="/cart" className="pg-cart" aria-label="Carrinho de compras">
               <div className="pg-cart-icon">
                 <ShoppingCart size={20} />
@@ -275,7 +270,7 @@ export function Navbar() {
               </div>
             </Link>
 
-            <div className="pg-user-menu-wrapper">
+            <div className={`pg-user-menu-wrapper ${isUserMenuOpen ? 'is-open' : ''}`} ref={userMenuRef}>
               <button
                 type="button"
                 className="pg-user-menu-trigger"
@@ -293,8 +288,12 @@ export function Navbar() {
                         <strong>{profile?.name || 'Minha Conta'}</strong>
                         <small>{user?.email}</small>
                       </div>
-                      <Link to="/account">Minha Conta</Link>
-                      <Link to="/orders">Meus Pedidos</Link>
+                      <Link to="/account" className="pg-user-menu-mobile-only">
+                        Minha Conta
+                      </Link>
+                      <Link to="/orders" className="pg-user-menu-mobile-only">
+                        Meus Pedidos
+                      </Link>
                       {profile?.role === 'admin' && <Link to="/dashboard">Painel Admin</Link>}
                       <button type="button" onClick={handleLogout}>
                         <LogOut size={16} />

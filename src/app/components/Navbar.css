@@ -9,15 +9,23 @@
 .pg-topbar {
   background: #1e1e1e;
   color: #ffffff;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
 }
 
 .pg-topbar-row {
-  min-height: 42px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  min-height: 34px;
+  display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pg-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .pg-topbar-highlight {
@@ -39,8 +47,10 @@
 
 .pg-topbar-links {
   display: inline-flex;
+  margin-left: auto;
   justify-content: flex-end;
   gap: 0.7rem;
+  flex-shrink: 0;
 }
 
 .pg-topbar-links a {
@@ -58,12 +68,14 @@
 
 .pg-mainbar {
   background: #ffffff;
+  position: relative;
+  z-index: 3;
 }
 
 .pg-mainbar-row {
-  min-height: 88px;
+  min-height: 76px;
   display: grid;
-  grid-template-columns: auto minmax(140px, 230px) minmax(320px, 1fr) auto;
+  grid-template-columns: auto minmax(120px, 190px) minmax(320px, 1fr) auto;
   align-items: center;
   gap: 1rem;
 }
@@ -82,12 +94,14 @@
   display: inline-flex;
   align-items: center;
   text-decoration: none;
+  min-height: 60px;
 }
 
 .pg-logo img {
-  max-width: 210px;
-  width: 100%;
-  height: auto;
+  width: auto;
+  max-width: 170px;
+  max-height: 64px;
+  object-fit: contain;
 }
 
 .pg-logo-fallback {
@@ -135,39 +149,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-.pg-account-desktop {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.15rem;
-  min-width: 120px;
-}
-
-.pg-account-desktop p {
-  margin: 0;
-  font-size: 0.78rem;
-  color: #505968;
-}
-
-.pg-account-desktop a,
-.pg-account-desktop button {
-  border: 0;
-  background: transparent;
-  margin: 0;
-  padding: 0;
-  color: #111827;
-  text-decoration: none;
-  font-size: 0.84rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.pg-account-desktop a:hover,
-.pg-account-desktop button:hover {
-  color: #009933;
+  gap: 0.6rem;
 }
 
 .pg-cart {
@@ -235,6 +217,10 @@
   position: relative;
 }
 
+.pg-user-menu-wrapper.is-open {
+  z-index: 1305;
+}
+
 .pg-user-menu-trigger {
   width: 40px;
   height: 40px;
@@ -262,6 +248,7 @@
   background: #ffffff;
   box-shadow: 0 18px 35px rgba(16, 24, 40, 0.18);
   overflow: hidden;
+  z-index: 1306;
 }
 
 .pg-user-menu-header {
@@ -299,22 +286,35 @@
   color: #009933;
 }
 
+.pg-user-menu-mobile-only {
+  display: none !important;
+}
+
 .pg-nav-desktop-wrapper {
   border-top: 1px solid #eef2f6;
   border-bottom: 1px solid #eef2f6;
   background: #ffffff;
+  position: relative;
+  z-index: 1;
+}
+
+.pg-nav-desktop {
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: thin;
 }
 
 .pg-nav-desktop > ul {
   margin: 0;
   padding: 0;
   list-style: none;
-  display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  display: flex;
+  min-width: max-content;
 }
 
 .pg-nav-desktop > ul > li {
   position: relative;
+  flex: 0 0 auto;
 }
 
 .pg-nav-desktop > ul > li > a {
@@ -328,8 +328,9 @@
   font-size: 0.79rem;
   font-weight: 700;
   text-transform: uppercase;
-  width: 100%;
-  padding: 0.4rem;
+  width: auto;
+  white-space: nowrap;
+  padding: 0.4rem 0.75rem;
 }
 
 .pg-nav-desktop > ul > li > a:hover {
@@ -340,6 +341,12 @@
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
+}
+
+.pg-header-root.user-menu-open .pg-nav-desktop > ul > li.has-children:hover .pg-mega-menu {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
 }
 
 .pg-mega-menu {
@@ -358,6 +365,12 @@
   pointer-events: none;
   transform: translateY(8px);
   transition: all 0.18s ease;
+}
+
+@media (min-width: 1181px) {
+  .pg-user-menu {
+    top: calc(100% + 56px);
+  }
 }
 
 .pg-mega-menu ul {
@@ -392,7 +405,7 @@
   .pg-mainbar-row {
     grid-template-columns: auto minmax(120px, 1fr) auto;
     gap: 0.65rem;
-    min-height: 72px;
+    min-height: 68px;
   }
 
   .pg-mobile-menu-button {
@@ -406,10 +419,6 @@
   }
 
   .pg-nav-desktop-wrapper {
-    display: none;
-  }
-
-  .pg-account-desktop {
     display: none;
   }
 
@@ -439,6 +448,10 @@
 
   .pg-mobile-panel.is-open {
     transform: translateX(0);
+  }
+
+  .pg-user-menu-mobile-only {
+    display: flex !important;
   }
 
   .pg-mobile-panel-header {
@@ -556,11 +569,12 @@
 
 @media (max-width: 640px) {
   .pg-mainbar-row {
-    min-height: 68px;
+    min-height: 62px;
   }
 
   .pg-logo img {
-    max-width: 158px;
+    max-width: 138px;
+    max-height: 50px;
   }
 
   .pg-main-actions {

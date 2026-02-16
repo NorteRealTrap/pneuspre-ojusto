@@ -4,6 +4,7 @@ import { useProductsStore, type Product } from '../stores/products';
 import { useCartStore } from '../stores/cart';
 import { useWishlistStore } from '../stores/wishlist';
 import { Heart, ShoppingCart, ArrowLeft } from 'lucide-react';
+import { sanitizeImageUrl } from '../utils/urlSafety';
 
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ export function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const safeProductImage = sanitizeImageUrl(product?.image || '');
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -67,7 +69,7 @@ export function ProductDetailPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-gray-100 rounded-lg p-8">
-          <img src={product.image} alt={product.model} className="w-full h-96 object-cover rounded" />
+          <img src={safeProductImage} alt={product.model} className="w-full h-96 object-cover rounded" />
         </div>
 
         <div>

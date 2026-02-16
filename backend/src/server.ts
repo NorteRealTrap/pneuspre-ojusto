@@ -10,6 +10,8 @@ dotenv.config();
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', true);
+const backendRootDirectory = path.resolve(__dirname, '..');
+const utf8TextDecoder = new TextDecoder('utf-8', { fatal: false, ignoreBOM: true });
 
 type PaymentMethod = 'credit_card' | 'pix' | 'boleto';
 type InternalPaymentStatus =
@@ -37,6 +39,26 @@ interface PaymentIntent {
   idempotencyKey: string;
 }
 
+interface CreditCardPaymentData {
+  holderName: string;
+  cardNumber: string;
+  expiryMonth: string;
+  expiryYear: string;
+  cvv: string;
+  installments: number;
+}
+
+interface PixPaymentData {
+  payerName: string;
+  payerCpf: string;
+}
+
+interface BoletoPaymentData {
+  payerName: string;
+  payerCpf: string;
+  payerEmail: string;
+}
+
 interface SupabaseOrderRecord {
   id: string;
   user_id: string;
@@ -44,6 +66,7 @@ interface SupabaseOrderRecord {
   status: string;
   payment_method: PaymentMethod;
   payment_id?: string | null;
+  shipping_address?: Record<string, unknown> | null;
 }
 
 interface SupabaseOrderItemRecord {
@@ -56,6 +79,11 @@ interface SupabaseProductRecord {
   price: number | string;
 }
 
+interface SupabaseProfileRoleRecord {
+  id: string;
+  role: string | null;
+}
+
 interface RateLimitBucket {
   count: number;
   resetAt: number;
@@ -66,6 +94,27 @@ interface RateLimitConfig {
   windowMs: number;
   maxRequests: number;
   message: string;
+}
+
+interface ProtectedCheckoutFileRecord {
+  version: 1;
+  event: 'checkout_initiated';
+  createdAt: string;
+  paymentId: string;
+  orderId: string;
+  userId: string;
+  userEmail: string | null;
+  amount: number;
+  currency: 'BRL';
+  paymentMethod: PaymentMethod;
+  idempotencyKey: string;
+  orderStatus: string;
+  shippingAddress: Record<string, unknown> | null;
+  requestMetadata: {
+    ip: string;
+    userAgent: string;
+  };
+  paymentData: Record<string, unknown>;
 }
 
 const normalizeEnv = (value?: string) => (value || '').trim();
@@ -85,9 +134,15 @@ const hasConfiguredSecret = (value?: string) => {
 };
 
 const localBannerDirectory = path.resolve(process.cwd(), 'public', 'login-banner');
+const checkoutLogDirectory = path.resolve(
+  backendRootDirectory,
+  normalizeEnv(process.env.CHECKOUT_PROTECTED_LOG_DIR) || '.secure/checkout-checkpoints'
+);
 const supabaseUrl = normalizeEnv(process.env.SUPABASE_URL);
 const supabaseAnonKey = normalizeEnv(process.env.SUPABASE_ANON_KEY);
-const supabaseServiceKey = normalizeEnv(process.env.SUPABASE_SERVICE_KEY);
+const supabaseServiceKey = normalizeEnv(
+  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 const supabaseAdminKey = hasConfiguredSecret(supabaseServiceKey) ? supabaseServiceKey : '';
 const supabaseAuthKey = hasConfiguredSecret(supabaseAnonKey)
   ? supabaseAnonKey
@@ -210,6 +265,26 @@ const webhookRateLimit = createRateLimit({
   message: 'Limite de webhook excedido temporariamente.',
 });
 
+const apiGlobalRateLimit = createRateLimit({
+  keyPrefix: 'api-global',
+  windowMs: 60 * 1000,
+  maxRequests: 300,
+  message: 'Muitas requisicoes em pouco tempo. Aguarde alguns segundos.',
+});
+
+const adminRateLimit = createRateLimit({
+  keyPrefix: 'admin-api',
+  windowMs: 60 * 1000,
+  maxRequests: 80,
+  message: 'Limite de requisicoes do painel excedido temporariamente.',
+});
+
+const hiddenRepositoryPathRegex = /^\/\.(?:git|svn|hg)(?:\/|$)/i;
+const suspiciousProbeRegex =
+  /(think(?:\\\\|\/)?app|invokefunction|call_user_func_array|phpinfo|wpgmza|wp_automatic|mphb_action|get_data_from_database|server-status|\/etc\/passwd|\.\.\/)/i;
+const suspiciousUserAgentRegex =
+  /(nuclei|assetnote|sqlmap|acunetix|nikto|zgrab|masscan|react2shell)/i;
+
 setInterval(() => {
   const now = Date.now();
   for (const [bucketKey, bucket] of rateLimitBuckets.entries()) {
@@ -218,6 +293,35 @@ setInterval(() => {
     }
   }
 }, 60 * 1000).unref();
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (hiddenRepositoryPathRegex.test(req.path)) {
+    return res.status(404).json({ error: 'Not Found' });
+  }
+
+  const rawUserAgent = String(req.headers['user-agent'] || '');
+  const originalUrl = req.originalUrl || req.url || '';
+  let decodedUrl = originalUrl;
+  try {
+    decodedUrl = decodeURIComponent(originalUrl);
+  } catch {
+    // Keep raw URL if decode fails.
+  }
+
+  if (suspiciousUserAgentRegex.test(rawUserAgent) || suspiciousProbeRegex.test(decodedUrl)) {
+    console.warn(
+      '[SECURITY] Probe blocked',
+      JSON.stringify({
+        ip: getClientIp(req),
+        path: req.path,
+        query: req.query,
+      })
+    );
+    return res.status(400).json({ error: 'Bad Request' });
+  }
+
+  return next();
+});
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -268,6 +372,8 @@ app.use(
   })
 );
 
+app.use('/api', apiGlobalRateLimit);
+
 interface AuthenticatedRequest extends Request {
   authUser?: {
     id: string;
@@ -312,6 +418,273 @@ const normalizeCurrency = (value: unknown): 'BRL' | null => {
   if (typeof value !== 'string') return null;
   const normalized = value.trim().toUpperCase();
   return normalized === 'BRL' ? 'BRL' : null;
+};
+
+const digitsOnly = (value: unknown) => String(value ?? '').replace(/\D/g, '');
+
+const normalizeTextField = (value: unknown, minLength = 1, maxLength = 160): string | null => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  if (normalized.length < minLength || normalized.length > maxLength) return null;
+  return normalized;
+};
+
+const normalizeEmail = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  return emailRegex.test(normalized) ? normalized : null;
+};
+
+const maskCardNumberForStorage = (value: unknown) => {
+  const digits = digitsOnly(value);
+  if (!digits) return '';
+  const lastFour = digits.slice(-4).padStart(4, '0');
+  return `**** **** **** ${lastFour}`;
+};
+
+const maskCpfForStorage = (value: unknown) => {
+  const cpf = digitsOnly(value);
+  if (!cpf) return '';
+  const suffix = cpf.slice(-2).padStart(2, '0');
+  return `***.***.***-${suffix}`;
+};
+
+const maskEmailForStorage = (value: unknown) => {
+  const email = normalizeEmail(value);
+  if (!email) return '';
+
+  const [namePart, domainPart] = email.split('@');
+  if (!namePart || !domainPart) return '';
+  const visibleName = namePart.slice(0, 2).padEnd(2, '*');
+
+  return `${visibleName}***@${domainPart}`;
+};
+
+const sanitizePaymentDataForStorage = (
+  paymentMethod: PaymentMethod,
+  paymentData: unknown
+): Record<string, unknown> => {
+  if (!paymentData || typeof paymentData !== 'object') return {};
+  const payload = paymentData as Record<string, unknown>;
+
+  if (paymentMethod === 'credit_card') {
+    return {
+      holderName: normalizeTextField(payload.holderName, 1, 120) || '',
+      cardNumberMasked: maskCardNumberForStorage(payload.cardNumber),
+      cardFingerprint: crypto
+        .createHash('sha256')
+        .update(`${digitsOnly(payload.cardNumber)}:${normalizeEnv(process.env.PAYMENT_API_KEY)}`)
+        .digest('hex'),
+      expiryMonth: digitsOnly(payload.expiryMonth),
+      expiryYear: digitsOnly(payload.expiryYear),
+      installments: normalizeInstallments(payload.installments) || 1,
+      cvvStored: false,
+    };
+  }
+
+  if (paymentMethod === 'pix') {
+    return {
+      payerName: normalizeTextField(payload.payerName, 1, 120) || '',
+      payerCpfMasked: maskCpfForStorage(payload.payerCpf),
+    };
+  }
+
+  return {
+    payerName: normalizeTextField(payload.payerName, 1, 120) || '',
+    payerCpfMasked: maskCpfForStorage(payload.payerCpf),
+    payerEmailMasked: maskEmailForStorage(payload.payerEmail),
+  };
+};
+
+const resolveProtectedCheckoutKey = (): Buffer => {
+  const explicitKey = normalizeEnv(process.env.CHECKOUT_PROTECTED_ENCRYPTION_KEY);
+  if (explicitKey) {
+    if (/^[a-f0-9]{64}$/i.test(explicitKey)) {
+      return Buffer.from(explicitKey, 'hex');
+    }
+
+    try {
+      const base64Buffer = Buffer.from(explicitKey, 'base64');
+      if (base64Buffer.length === 32) {
+        return base64Buffer;
+      }
+    } catch {
+      // ignore invalid base64 and fallback to sha256
+    }
+
+    return crypto.createHash('sha256').update(explicitKey).digest();
+  }
+
+  const fallbackSecret = normalizeEnv(process.env.PAYMENT_API_KEY);
+  if (fallbackSecret) {
+    return crypto.createHash('sha256').update(fallbackSecret).digest();
+  }
+
+  throw new Error('CHECKOUT_PROTECTED_ENCRYPTION_KEY ou PAYMENT_API_KEY devem estar configuradas');
+};
+
+const appendProtectedCheckoutRecord = (record: ProtectedCheckoutFileRecord) => {
+  fs.mkdirSync(checkoutLogDirectory, { recursive: true, mode: 0o700 });
+
+  const encryptionKey = resolveProtectedCheckoutKey();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', encryptionKey, iv);
+  const plaintext = Buffer.from(JSON.stringify(record), 'utf8');
+  const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+
+  const linePayload = JSON.stringify({
+    alg: 'aes-256-gcm',
+    v: 1,
+    iv: iv.toString('base64'),
+    tag: authTag.toString('base64'),
+    data: encrypted.toString('base64'),
+  });
+
+  const fileDate = new Date().toISOString().slice(0, 10);
+  const filePath = path.join(checkoutLogDirectory, `checkout-${fileDate}.protected.log`);
+  fs.appendFileSync(filePath, `${linePayload}\n`, { encoding: 'utf8', mode: 0o600 });
+};
+
+const isValidCpf = (value: unknown): boolean => {
+  const cpf = digitsOnly(value);
+  if (cpf.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i += 1) {
+    sum += Number(cpf[i]) * (10 - i);
+  }
+  let firstDigit = (sum * 10) % 11;
+  if (firstDigit === 10) firstDigit = 0;
+  if (firstDigit !== Number(cpf[9])) return false;
+
+  sum = 0;
+  for (let i = 0; i < 10; i += 1) {
+    sum += Number(cpf[i]) * (11 - i);
+  }
+  let secondDigit = (sum * 10) % 11;
+  if (secondDigit === 10) secondDigit = 0;
+
+  return secondDigit === Number(cpf[10]);
+};
+
+const isValidCardNumber = (value: unknown): boolean => {
+  const cardNumber = digitsOnly(value);
+  if (cardNumber.length < 13 || cardNumber.length > 19) return false;
+
+  let sum = 0;
+  let shouldDouble = false;
+
+  for (let i = cardNumber.length - 1; i >= 0; i -= 1) {
+    let digit = Number(cardNumber[i]);
+    if (shouldDouble) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    shouldDouble = !shouldDouble;
+  }
+
+  return sum % 10 === 0;
+};
+
+const isValidCardExpiry = (monthValue: unknown, yearValue: unknown): boolean => {
+  const month = Number(digitsOnly(monthValue));
+  const year = Number(digitsOnly(yearValue));
+
+  if (!Number.isInteger(month) || month < 1 || month > 12) return false;
+  if (!Number.isInteger(year) || year < 0 || year > 99) return false;
+
+  const now = new Date();
+  const currentYear = now.getFullYear() % 100;
+  const currentMonth = now.getMonth() + 1;
+
+  if (year < currentYear) return false;
+  if (year === currentYear && month < currentMonth) return false;
+
+  return true;
+};
+
+const normalizeInstallments = (value: unknown): number | null => {
+  const installments = Number(value);
+  if (!Number.isInteger(installments)) return null;
+  if (installments < 1 || installments > 12) return null;
+  return installments;
+};
+
+const validatePaymentData = (
+  paymentMethod: PaymentMethod,
+  paymentData: unknown
+): { ok: true } | { ok: false; error: string } => {
+  if (!paymentData || typeof paymentData !== 'object') {
+    return { ok: false, error: 'Dados de pagamento obrigatorios para continuar.' };
+  }
+
+  const payload = paymentData as Record<string, unknown>;
+
+  if (paymentMethod === 'credit_card') {
+    const holderName = normalizeTextField(payload.holderName, 3, 120);
+    const cvv = digitsOnly(payload.cvv);
+    const installments = normalizeInstallments(payload.installments);
+
+    if (!holderName) {
+      return { ok: false, error: 'Nome impresso no cartao invalido.' };
+    }
+
+    if (!isValidCardNumber(payload.cardNumber)) {
+      return { ok: false, error: 'Numero do cartao invalido.' };
+    }
+
+    if (!isValidCardExpiry(payload.expiryMonth, payload.expiryYear)) {
+      return { ok: false, error: 'Validade do cartao invalida ou expirada.' };
+    }
+
+    if (cvv.length < 3 || cvv.length > 4) {
+      return { ok: false, error: 'Codigo de seguranca (CVV) invalido.' };
+    }
+
+    if (!installments) {
+      return { ok: false, error: 'Numero de parcelas invalido.' };
+    }
+
+    return { ok: true };
+  }
+
+  if (paymentMethod === 'pix') {
+    const payerName = normalizeTextField(payload.payerName, 3, 120);
+    if (!payerName) {
+      return { ok: false, error: 'Nome do pagador no PIX invalido.' };
+    }
+
+    if (!isValidCpf(payload.payerCpf)) {
+      return { ok: false, error: 'CPF do pagador no PIX invalido.' };
+    }
+
+    return { ok: true };
+  }
+
+  if (paymentMethod === 'boleto') {
+    const payerName = normalizeTextField(payload.payerName, 3, 120);
+    const payerEmail = normalizeEmail(payload.payerEmail);
+
+    if (!payerName) {
+      return { ok: false, error: 'Nome do pagador no boleto invalido.' };
+    }
+
+    if (!isValidCpf(payload.payerCpf)) {
+      return { ok: false, error: 'CPF do pagador no boleto invalido.' };
+    }
+
+    if (!payerEmail) {
+      return { ok: false, error: 'Email para boleto invalido.' };
+    }
+
+    return { ok: true };
+  }
+
+  return { ok: false, error: 'Metodo de pagamento invalido.' };
 };
 
 const parseDatabaseAmount = (value: unknown): number => {
@@ -372,7 +745,10 @@ const cleanupExpiredIntents = () => {
 
 const requireSupabaseAdmin = (res: Response): { url: string; key: string } | null => {
   if (!supabaseUrl || !supabaseAdminKey) {
-    res.status(500).json({ error: 'SUPABASE_URL/SUPABASE_SERVICE_KEY nao configurados para operacoes de pagamento' });
+    res.status(500).json({
+      error:
+        'SUPABASE_URL/SUPABASE_SERVICE_KEY (ou SUPABASE_SERVICE_ROLE_KEY) nao configurados para operacoes de pagamento',
+    });
     return null;
   }
   return { url: supabaseUrl, key: supabaseAdminKey };
@@ -382,7 +758,7 @@ const getSupabaseOrderById = async (
   config: { url: string; key: string },
   orderId: string
 ): Promise<SupabaseOrderRecord | null> => {
-  const query = `id=eq.${encodeURIComponent(orderId)}&select=id,user_id,total,status,payment_method,payment_id`;
+  const query = `id=eq.${encodeURIComponent(orderId)}&select=id,user_id,total,status,payment_method,payment_id,shipping_address`;
   const response = await fetch(`${config.url}/rest/v1/orders?${query}`, {
     method: 'GET',
     headers: buildSupabaseHeaders(config.key),
@@ -400,7 +776,7 @@ const getSupabaseOrderByPaymentId = async (
   config: { url: string; key: string },
   paymentId: string
 ): Promise<SupabaseOrderRecord | null> => {
-  const query = `payment_id=eq.${encodeURIComponent(paymentId)}&select=id,user_id,total,status,payment_method,payment_id`;
+  const query = `payment_id=eq.${encodeURIComponent(paymentId)}&select=id,user_id,total,status,payment_method,payment_id,shipping_address`;
   const response = await fetch(`${config.url}/rest/v1/orders?${query}`, {
     method: 'GET',
     headers: buildSupabaseHeaders(config.key),
@@ -530,7 +906,11 @@ app.post('/api/payment/webhook', webhookRateLimit, express.raw({ type: 'applicat
       return res.status(400).json({ error: 'Assinatura ausente no webhook' });
     }
 
-    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+    if (!Buffer.isBuffer(req.body)) {
+      return res.status(400).json({ error: 'Payload invalido: tipo nao suportado' });
+    }
+
+    const rawBody: Buffer = req.body;
     if (rawBody.length === 0) {
       return res.status(400).json({ error: 'Payload vazio no webhook' });
     }
@@ -541,17 +921,28 @@ app.post('/api/payment/webhook', webhookRateLimit, express.raw({ type: 'applicat
       return res.status(401).json({ error: 'Assinatura invalida no webhook' });
     }
 
-    let event: any;
+    const payloadText = utf8TextDecoder.decode(rawBody).trim();
+    if (!payloadText) {
+      return res.status(400).json({ error: 'Payload vazio no webhook' });
+    }
+
+    let event: unknown;
     try {
-      event = JSON.parse(rawBody.toString('utf8'));
+      event = JSON.parse(payloadText);
     } catch (_error) {
       return res.status(400).json({ error: 'Payload JSON invalido no webhook' });
     }
 
-    const paymentId = normalizePaymentId(event?.paymentId);
-    const paymentStatus = webhookStatusToInternal(event?.status);
-    const explicitOrderId = normalizeOrderId(event?.orderId);
-    const explicitPaymentMethod = normalizePaymentMethod(event?.paymentMethod);
+    if (!event || typeof event !== 'object' || Array.isArray(event)) {
+      return res.status(400).json({ error: 'Payload JSON deve ser um objeto' });
+    }
+
+    const webhookPayload = event as Record<string, unknown>;
+
+    const paymentId = normalizePaymentId(webhookPayload.paymentId);
+    const paymentStatus = webhookStatusToInternal(webhookPayload.status);
+    const explicitOrderId = normalizeOrderId(webhookPayload.orderId);
+    const explicitPaymentMethod = normalizePaymentMethod(webhookPayload.paymentMethod);
 
     if (!paymentId || !paymentStatus) {
       return res.status(400).json({ error: 'Campos obrigatorios no webhook: paymentId, status' });
@@ -629,6 +1020,46 @@ const authenticate = async (req: AuthenticatedRequest, res: Response, next: Next
   }
 };
 
+const getAdminProfileRole = async (
+  config: { url: string; key: string },
+  userId: string
+): Promise<string | null> => {
+  const query = `id=eq.${encodeURIComponent(userId)}&select=id,role&limit=1`;
+  const response = await fetch(`${config.url}/rest/v1/profiles?${query}`, {
+    method: 'GET',
+    headers: buildSupabaseHeaders(config.key),
+  });
+
+  if (!response.ok) {
+    throw new Error('Falha ao validar role administrativa no Supabase');
+  }
+
+  const rows = (await response.json()) as SupabaseProfileRoleRecord[];
+  const profile = rows[0];
+  return profile?.role ? String(profile.role).toLowerCase() : null;
+};
+
+const requireAdmin = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const userId = req.authUser?.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'Usuario nao autenticado' });
+  }
+
+  const supabaseAdmin = requireSupabaseAdmin(res);
+  if (!supabaseAdmin) return;
+
+  try {
+    const role = await getAdminProfileRole(supabaseAdmin, userId);
+    if (role !== 'admin') {
+      return res.status(403).json({ error: 'Acesso restrito ao painel administrativo' });
+    }
+
+    return next();
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Falha ao validar permissao de administrador' });
+  }
+};
+
 const requirePaymentKey = (res: Response): string | null => {
   const privateKey = normalizeEnv(process.env.PAYMENT_API_KEY);
   if (!hasConfiguredSecret(privateKey)) {
@@ -654,6 +1085,11 @@ const initiateCheckoutPayment = async (req: AuthenticatedRequest, res: Response)
       return res.status(400).json({
         error: 'Campos obrigatorios invalidos: orderId(UUID), amount(numero), paymentMethod(credit_card|pix|boleto), currency(BRL)',
       });
+    }
+
+    const paymentDataValidation = validatePaymentData(paymentMethod, req.body?.paymentData);
+    if (!paymentDataValidation.ok) {
+      return res.status(400).json({ error: paymentDataValidation.error });
     }
 
     if (!idempotencyKeyRegex.test(idempotencyKey)) {
@@ -750,6 +1186,27 @@ const initiateCheckoutPayment = async (req: AuthenticatedRequest, res: Response)
       payment_id: paymentId,
       payment_method: paymentMethod,
       status: nextOrderStatus,
+    });
+
+    appendProtectedCheckoutRecord({
+      version: 1,
+      event: 'checkout_initiated',
+      createdAt: new Date().toISOString(),
+      paymentId,
+      orderId,
+      userId,
+      userEmail: req.authUser?.email || null,
+      amount,
+      currency,
+      paymentMethod,
+      idempotencyKey,
+      orderStatus: nextOrderStatus,
+      shippingAddress: (order.shipping_address as Record<string, unknown> | null) || null,
+      requestMetadata: {
+        ip: getClientIp(req),
+        userAgent: String(req.headers['user-agent'] || ''),
+      },
+      paymentData: sanitizePaymentDataForStorage(paymentMethod, req.body?.paymentData),
     });
 
     return res.status(201).json({
@@ -981,6 +1438,487 @@ const refundCheckoutPayment = async (req: AuthenticatedRequest, res: Response) =
   }
 };
 
+const supportedProductSeasons = new Set(['all-season', 'summer', 'winter']);
+const supportedProductCategories = new Set([
+  'passeio',
+  'suv',
+  'caminhonete',
+  'van',
+  'moto',
+  'agricola',
+  'otr',
+  'caminhao',
+  'onibus',
+]);
+
+const normalizeBoolean = (value: unknown): boolean | null => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return null;
+};
+
+const normalizeNumber = (value: unknown): number | null => {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const normalizeInteger = (value: unknown): number | null => {
+  const parsed = normalizeNumber(value);
+  if (parsed === null) return null;
+  return Number.isInteger(parsed) ? parsed : null;
+};
+
+const normalizeString = (value: unknown, minLength = 1, maxLength = 200): string | null => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  if (normalized.length < minLength || normalized.length > maxLength) return null;
+  return normalized;
+};
+
+const normalizeStringArray = (value: unknown, maxItems = 20, maxItemLength = 120): string[] | null => {
+  if (!Array.isArray(value)) return null;
+  const sanitized: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value) {
+    const text = normalizeString(item, 1, maxItemLength);
+    if (!text) continue;
+    const dedupeKey = text.toLowerCase();
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    sanitized.push(text);
+    if (sanitized.length >= maxItems) break;
+  }
+
+  return sanitized;
+};
+
+type ProductPayloadMode = 'create' | 'update';
+
+const sanitizeAdminProductPayload = (
+  input: Record<string, unknown>,
+  mode: ProductPayloadMode
+): { data: Record<string, unknown> | null; error: string | null } => {
+  const data: Record<string, unknown> = {};
+
+  const requireField = (field: string) => mode === 'create' || Object.prototype.hasOwnProperty.call(input, field);
+
+  if (requireField('brand')) {
+    const value = normalizeString(input.brand, 1, 120);
+    if (!value) return { data: null, error: 'Campo brand invalido.' };
+    data.brand = value;
+  }
+
+  if (requireField('model')) {
+    const value = normalizeString(input.model, 1, 120);
+    if (!value) return { data: null, error: 'Campo model invalido.' };
+    data.model = value;
+  }
+
+  if (requireField('width')) {
+    const value = normalizeString(input.width, 1, 12);
+    if (!value) return { data: null, error: 'Campo width invalido.' };
+    data.width = value;
+  }
+
+  if (requireField('profile')) {
+    const value = normalizeString(input.profile, 1, 12);
+    if (!value) return { data: null, error: 'Campo profile invalido.' };
+    data.profile = value;
+  }
+
+  if (requireField('diameter')) {
+    const value = normalizeString(input.diameter, 1, 12);
+    if (!value) return { data: null, error: 'Campo diameter invalido.' };
+    data.diameter = value;
+  }
+
+  if (requireField('load_index')) {
+    const value = normalizeString(input.load_index, 1, 12);
+    if (!value) return { data: null, error: 'Campo load_index invalido.' };
+    data.load_index = value;
+  }
+
+  if (requireField('speed_rating')) {
+    const value = normalizeString(input.speed_rating, 1, 12);
+    if (!value) return { data: null, error: 'Campo speed_rating invalido.' };
+    data.speed_rating = value;
+  }
+
+  if (requireField('price')) {
+    const value = normalizeNumber(input.price);
+    if (value === null || value <= 0 || value > 1_000_000) {
+      return { data: null, error: 'Campo price invalido.' };
+    }
+    data.price = Math.round(value * 100) / 100;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'old_price')) {
+    const oldPriceRaw = input.old_price;
+    if (oldPriceRaw === null || oldPriceRaw === undefined || oldPriceRaw === '') {
+      data.old_price = null;
+    } else {
+      const value = normalizeNumber(oldPriceRaw);
+      if (value === null || value <= 0 || value > 1_000_000) {
+        return { data: null, error: 'Campo old_price invalido.' };
+      }
+      data.old_price = Math.round(value * 100) / 100;
+    }
+  } else if (mode === 'create') {
+    data.old_price = null;
+  }
+
+  if (requireField('stock')) {
+    const value = normalizeInteger(input.stock);
+    if (value === null || value < 0 || value > 1_000_000) {
+      return { data: null, error: 'Campo stock invalido.' };
+    }
+    data.stock = value;
+  }
+
+  if (requireField('image')) {
+    const value = normalizeString(input.image, 1, 2000);
+    if (!value) return { data: null, error: 'Campo image invalido.' };
+    data.image = value;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'features')) {
+    const features = normalizeStringArray(input.features);
+    if (!features) return { data: null, error: 'Campo features invalido.' };
+    data.features = features;
+  } else if (mode === 'create') {
+    data.features = [];
+  }
+
+  if (requireField('category')) {
+    const value = normalizeString(input.category, 1, 50);
+    if (!value) return { data: null, error: 'Campo category invalido.' };
+    const normalized = value.toLowerCase();
+    data.category = supportedProductCategories.has(normalized) ? normalized : value;
+  }
+
+  if (requireField('season')) {
+    const value = normalizeString(input.season, 1, 50);
+    if (!value) return { data: null, error: 'Campo season invalido.' };
+    const normalized = value.toLowerCase();
+    data.season = supportedProductSeasons.has(normalized) ? normalized : 'all-season';
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'runflat')) {
+    const value = normalizeBoolean(input.runflat);
+    if (value === null) return { data: null, error: 'Campo runflat invalido.' };
+    data.runflat = value;
+  } else if (mode === 'create') {
+    data.runflat = false;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'featured')) {
+    const value = normalizeBoolean(input.featured);
+    if (value === null) return { data: null, error: 'Campo featured invalido.' };
+    data.featured = value;
+  } else if (mode === 'create') {
+    data.featured = false;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'description')) {
+    const rawDescription = input.description;
+    if (rawDescription === null || rawDescription === undefined || rawDescription === '') {
+      data.description = '';
+    } else {
+      const value = normalizeString(rawDescription, 1, 2000);
+      if (!value) return { data: null, error: 'Campo description invalido.' };
+      data.description = value;
+    }
+  } else if (mode === 'create') {
+    data.description = '';
+  }
+
+  if (mode === 'update' && Object.keys(data).length === 0) {
+    return { data: null, error: 'Nenhum campo valido informado para atualizacao.' };
+  }
+
+  return { data, error: null };
+};
+
+const normalizeSiteConfigPayload = (input: unknown): Record<string, unknown> | null => {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  return input as Record<string, unknown>;
+};
+
+const logAdminAction = (req: AuthenticatedRequest, action: string, metadata: Record<string, unknown>) => {
+  console.info(
+    '[ADMIN_AUDIT]',
+    JSON.stringify({
+      at: new Date().toISOString(),
+      action,
+      userId: req.authUser?.id || null,
+      ip: getClientIp(req),
+      userAgent: String(req.headers['user-agent'] || ''),
+      ...metadata,
+    })
+  );
+};
+
+const getAdminOrderSummary = async (
+  config: { url: string; key: string },
+  since: string | null
+): Promise<{
+  confirmedRevenue: number;
+  pendingRevenue: number;
+  confirmedOrders: number;
+  pendingOrders: number;
+  cancelledOrders: number;
+  totalOrders: number;
+}> => {
+  const selectFields = 'id,total,status,created_at';
+  const filters: string[] = [`select=${encodeURIComponent(selectFields)}`];
+  if (since) {
+    filters.push(`created_at=gte.${encodeURIComponent(since)}`);
+  }
+
+  const response = await fetch(`${config.url}/rest/v1/orders?${filters.join('&')}`, {
+    method: 'GET',
+    headers: buildSupabaseHeaders(config.key),
+  });
+
+  if (!response.ok) {
+    throw new Error('Falha ao consultar resumo de pedidos');
+  }
+
+  const rows = (await response.json()) as Array<{ total: number | string; status: string }>;
+
+  const paidStatuses = new Set(['processing', 'confirmed', 'approved', 'shipped', 'delivered']);
+  const pendingStatuses = new Set(['pending']);
+  const cancelledStatuses = new Set(['cancelled', 'refunded', 'declined']);
+
+  return rows.reduce(
+    (acc, row) => {
+      const total = parseDatabaseAmount(row.total);
+      const status = String(row.status || '').toLowerCase();
+
+      acc.totalOrders += 1;
+      if (paidStatuses.has(status)) {
+        acc.confirmedRevenue += total;
+        acc.confirmedOrders += 1;
+      } else if (pendingStatuses.has(status)) {
+        acc.pendingRevenue += total;
+        acc.pendingOrders += 1;
+      } else if (cancelledStatuses.has(status)) {
+        acc.cancelledOrders += 1;
+      }
+
+      return acc;
+    },
+    {
+      confirmedRevenue: 0,
+      pendingRevenue: 0,
+      confirmedOrders: 0,
+      pendingOrders: 0,
+      cancelledOrders: 0,
+      totalOrders: 0,
+    }
+  );
+};
+
+app.get('/api/admin/orders/summary', authenticate, requireAdmin, adminRateLimit, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const supabaseAdmin = requireSupabaseAdmin(res);
+    if (!supabaseAdmin) return;
+
+    const sinceRaw = typeof req.query.since === 'string' ? req.query.since.trim() : '';
+    const since = sinceRaw && !Number.isNaN(Date.parse(sinceRaw)) ? new Date(sinceRaw).toISOString() : null;
+    const summary = await getAdminOrderSummary(supabaseAdmin, since);
+
+    logAdminAction(req, 'orders.summary.read', { since });
+    return res.status(200).json({ data: summary });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Erro ao consultar resumo administrativo' });
+  }
+});
+
+app.patch('/api/admin/orders/:id/status', authenticate, requireAdmin, adminRateLimit, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const orderId = normalizeOrderId(req.params.id);
+    if (!orderId) {
+      return res.status(400).json({ error: 'ID de pedido invalido.' });
+    }
+
+    const nextStatus = normalizeTextField(req.body?.status, 3, 20);
+    const allowedStatuses = new Set(['pending', 'processing', 'shipped', 'delivered', 'cancelled']);
+    if (!nextStatus || !allowedStatuses.has(nextStatus.toLowerCase())) {
+      return res.status(400).json({ error: 'Status invalido para atualizacao.' });
+    }
+
+    const supabaseAdmin = requireSupabaseAdmin(res);
+    if (!supabaseAdmin) return;
+
+    const updated = await updateSupabaseOrder(supabaseAdmin, orderId, {
+      status: nextStatus.toLowerCase(),
+    });
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Pedido nao encontrado.' });
+    }
+
+    logAdminAction(req, 'orders.status.update', { orderId, status: nextStatus.toLowerCase() });
+    return res.status(200).json({ data: updated });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Erro ao atualizar status do pedido' });
+  }
+});
+
+app.post('/api/admin/products', authenticate, requireAdmin, adminRateLimit, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const payload = req.body && typeof req.body === 'object' ? (req.body as Record<string, unknown>) : null;
+    if (!payload) {
+      return res.status(400).json({ error: 'Payload do produto invalido.' });
+    }
+
+    const { data: productPayload, error: payloadError } = sanitizeAdminProductPayload(payload, 'create');
+    if (payloadError || !productPayload) {
+      return res.status(400).json({ error: payloadError || 'Dados do produto invalidos.' });
+    }
+
+    const supabaseAdmin = requireSupabaseAdmin(res);
+    if (!supabaseAdmin) return;
+
+    const response = await fetch(`${supabaseAdmin.url}/rest/v1/products`, {
+      method: 'POST',
+      headers: buildSupabaseHeaders(supabaseAdmin.key, true),
+      body: JSON.stringify(productPayload),
+    });
+
+    if (!response.ok) {
+      return res.status(500).json({ error: 'Falha ao criar produto no catalogo' });
+    }
+
+    const rows = (await response.json()) as Record<string, unknown>[];
+    const created = rows[0] || null;
+
+    logAdminAction(req, 'products.create', { productId: created?.id || null });
+    return res.status(201).json({ data: created });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Erro ao criar produto' });
+  }
+});
+
+app.patch('/api/admin/products/:id', authenticate, requireAdmin, adminRateLimit, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const productId = normalizeOrderId(req.params.id);
+    if (!productId) {
+      return res.status(400).json({ error: 'ID de produto invalido.' });
+    }
+
+    const payload = req.body && typeof req.body === 'object' ? (req.body as Record<string, unknown>) : null;
+    if (!payload) {
+      return res.status(400).json({ error: 'Payload de atualizacao invalido.' });
+    }
+
+    const { data: updatePayload, error: payloadError } = sanitizeAdminProductPayload(payload, 'update');
+    if (payloadError || !updatePayload) {
+      return res.status(400).json({ error: payloadError || 'Dados de atualizacao invalidos.' });
+    }
+
+    const supabaseAdmin = requireSupabaseAdmin(res);
+    if (!supabaseAdmin) return;
+
+    const response = await fetch(`${supabaseAdmin.url}/rest/v1/products?id=eq.${encodeURIComponent(productId)}`, {
+      method: 'PATCH',
+      headers: buildSupabaseHeaders(supabaseAdmin.key, true),
+      body: JSON.stringify(updatePayload),
+    });
+
+    if (!response.ok) {
+      return res.status(500).json({ error: 'Falha ao atualizar produto no catalogo' });
+    }
+
+    const rows = (await response.json()) as Record<string, unknown>[];
+    const updated = rows[0] || null;
+    if (!updated) {
+      return res.status(404).json({ error: 'Produto nao encontrado.' });
+    }
+
+    logAdminAction(req, 'products.update', { productId });
+    return res.status(200).json({ data: updated });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Erro ao atualizar produto' });
+  }
+});
+
+app.delete('/api/admin/products/:id', authenticate, requireAdmin, adminRateLimit, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const productId = normalizeOrderId(req.params.id);
+    if (!productId) {
+      return res.status(400).json({ error: 'ID de produto invalido.' });
+    }
+
+    const supabaseAdmin = requireSupabaseAdmin(res);
+    if (!supabaseAdmin) return;
+
+    const response = await fetch(`${supabaseAdmin.url}/rest/v1/products?id=eq.${encodeURIComponent(productId)}`, {
+      method: 'PATCH',
+      headers: buildSupabaseHeaders(supabaseAdmin.key, true),
+      body: JSON.stringify({ deleted_at: new Date().toISOString() }),
+    });
+
+    if (!response.ok) {
+      return res.status(500).json({ error: 'Falha ao excluir produto no catalogo' });
+    }
+
+    const rows = (await response.json()) as Record<string, unknown>[];
+    const updated = rows[0] || null;
+    if (!updated) {
+      return res.status(404).json({ error: 'Produto nao encontrado.' });
+    }
+
+    logAdminAction(req, 'products.delete', { productId });
+    return res.status(200).json({ data: { id: productId, deleted: true } });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Erro ao excluir produto' });
+  }
+});
+
+app.patch('/api/admin/site-config', authenticate, requireAdmin, adminRateLimit, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const configPayload = normalizeSiteConfigPayload(req.body?.config ?? req.body);
+    if (!configPayload) {
+      return res.status(400).json({ error: 'Payload de configuracao invalido.' });
+    }
+
+    const supabaseAdmin = requireSupabaseAdmin(res);
+    if (!supabaseAdmin) return;
+
+    const response = await fetch(`${supabaseAdmin.url}/rest/v1/site_config?on_conflict=id`, {
+      method: 'POST',
+      headers: {
+        ...buildSupabaseHeaders(supabaseAdmin.key, true),
+        Prefer: 'resolution=merge-duplicates,return=representation',
+      },
+      body: JSON.stringify({
+        id: 'default',
+        config_json: configPayload,
+        updated_by: req.authUser?.id || null,
+      }),
+    });
+
+    if (!response.ok) {
+      return res.status(500).json({ error: 'Falha ao persistir configuracoes do site' });
+    }
+
+    const rows = (await response.json()) as Array<{ id: string; config_json: Record<string, unknown>; updated_at: string }>;
+    const saved = rows[0] || null;
+
+    logAdminAction(req, 'site_config.update', { rowId: saved?.id || 'default' });
+    return res.status(200).json({ data: saved });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Erro ao salvar configuracoes do site' });
+  }
+});
+
 app.get('/api/public/login-banner', (req: Request, res: Response) => {
   const localBannerFile = path.basename((process.env.LOGIN_BANNER_FILE || '').trim());
   const fallbackBannerUrl = (process.env.LOGIN_BANNER_IMAGE_URL || '').trim();
@@ -1011,7 +1949,8 @@ app.get('/', (req: Request, res: Response) => {
     endpoints: {
       health: '/api/health',
       loginBanner: '/api/public/login-banner',
-      payment: '/api/payment/*'
+      payment: '/api/payment/*',
+      admin: '/api/admin/*'
     }
   });
 });

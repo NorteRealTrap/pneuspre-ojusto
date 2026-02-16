@@ -1,157 +1,143 @@
-/* Tire Marquee Component */
-
-.tire-marquee-section {
+.hero-stores-section {
   width: 100%;
-  padding: 4rem 0;
-  background: linear-gradient(135deg, #f3f4f6 0%, #ffffff 100%);
-  overflow: hidden;
+  padding: 3.5rem 0;
+  background: linear-gradient(180deg, #f3f4f6 0%, #ffffff 100%);
 }
 
-.tire-marquee-container {
-  max-width: 90%;
-  margin: 0 auto;
-}
-
-.tire-marquee-title {
-  font-size: 2.25rem;
-  font-weight: 700;
+.hero-stores-content {
   text-align: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.8rem;
+}
+
+.hero-stores-title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   color: #1f2937;
-  letter-spacing: -0.5px;
 }
 
-.tire-marquee-subtitle {
-  font-size: 1rem;
-  text-align: center;
+.hero-stores-subtitle {
+  margin: 0.6rem auto 0;
+  max-width: 620px;
   color: #6b7280;
-  margin-bottom: 3rem;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+  font-size: 1rem;
 }
 
-.tire-marquee-wrapper {
+.hero-stores-logos-shell {
+  position: relative;
   width: 100%;
   overflow: hidden;
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  padding: 2rem 0;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1.1rem 0;
 }
 
-.tire-marquee {
+.hero-stores-logos-shell::before,
+.hero-stores-logos-shell::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  width: 72px;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hero-stores-logos-shell::before {
+  left: 0;
+  background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.hero-stores-logos-shell::after {
+  right: 0;
+  background: linear-gradient(270deg, #ffffff 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.hero-stores_logos-marquee {
   display: flex;
-  gap: 2.5rem;
-  padding: 0 1rem;
-  width: fit-content;
-  animation: scroll-marquee 30s linear infinite;
+  align-items: center;
+  width: max-content;
+  will-change: transform;
 }
 
-.tire-marquee-item {
+.hero-stores_logos-container {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 0 1rem;
+  flex-shrink: 0;
+}
+
+.hero-stores_logo-item {
+  width: 150px;
+  min-width: 150px;
+  height: 46px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 150px;
-  height: 80px;
   flex-shrink: 0;
-  padding: 1rem;
 }
 
-.tire-marquee-logo {
-  max-width: 140px;
-  max-height: 70px;
+.hero-stores_logos-images {
   width: auto;
-  height: auto;
+  height: 38px;
+  max-width: 142px;
   object-fit: contain;
-  filter: grayscale(100%);
-  opacity: 0.8;
-  transition: all 0.3s ease;
+  opacity: 0.95;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.tire-marquee-item:hover .tire-marquee-logo {
-  filter: grayscale(0%);
+.hero-stores_logos-images:hover {
   opacity: 1;
-  transform: scale(1.05);
+  transform: translateY(-1px);
 }
 
-@keyframes scroll-marquee {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(calc(-50% - 1.25rem));
-  }
-}
-
-/* Pausa animação ao passar o mouse */
-.tire-marquee-wrapper:hover .tire-marquee {
-  animation-play-state: paused;
-}
-
-/* Responsivo mobile */
 @media (max-width: 768px) {
-  .tire-marquee-section {
-    padding: 3rem 0;
+  .hero-stores-section {
+    padding: 2.75rem 0;
   }
 
-  .tire-marquee-title {
-    font-size: 1.875rem;
-    margin-bottom: 0.5rem;
+  .hero-stores-title {
+    font-size: 1.65rem;
   }
 
-  .tire-marquee-subtitle {
-    font-size: 0.9rem;
-    margin-bottom: 2rem;
+  .hero-stores-subtitle {
+    font-size: 0.92rem;
+    padding: 0 1rem;
   }
 
-  .tire-marquee-wrapper {
-    padding: 1.5rem 0;
+  .hero-stores_logos-container {
+    gap: 1.4rem;
   }
 
-  .tire-marquee {
-    gap: 1.5rem;
+  .hero-stores_logo-item {
+    width: 124px;
+    min-width: 124px;
+    height: 40px;
   }
 
-  .tire-marquee-item {
-    min-width: 120px;
-    height: 70px;
-    padding: 0.75rem;
-  }
-
-  .tire-marquee-logo {
-    max-width: 110px;
-    max-height: 55px;
+  .hero-stores_logos-images {
+    height: 31px;
+    max-width: 116px;
   }
 }
 
 @media (max-width: 480px) {
-  .tire-marquee-section {
-    padding: 2rem 0;
-  }
-
-  .tire-marquee-title {
-    font-size: 1.5rem;
-  }
-
-  .tire-marquee-subtitle {
-    font-size: 0.85rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .tire-marquee-item {
-    min-width: 100px;
-    height: 60px;
-    padding: 0.5rem;
-  }
-
-  .tire-marquee-logo {
-    max-width: 90px;
-    max-height: 45px;
-  }
-
-  .tire-marquee {
+  .hero-stores_logos-container {
     gap: 1rem;
-    animation: scroll-marquee 25s linear infinite;
+    padding: 0 0.65rem;
+  }
+
+  .hero-stores_logo-item {
+    width: 108px;
+    min-width: 108px;
+    height: 36px;
+  }
+
+  .hero-stores_logos-images {
+    height: 28px;
+    max-width: 100px;
   }
 }

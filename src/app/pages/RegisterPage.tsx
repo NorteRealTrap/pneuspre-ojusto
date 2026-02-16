@@ -5,6 +5,11 @@ import { useAuthStore } from '../stores/auth';
 import './Auth.css';
 
 const STRONG_PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+const CPF_DIGITS_REGEX = /^\d{11}$/;
+
+function normalizeCpfInput(value: string): string {
+  return value.replace(/\D/g, '').slice(0, 11);
+}
 
 function mapRegisterError(error: unknown): string {
   if (!error || typeof error !== 'object') {
@@ -27,6 +32,17 @@ function mapRegisterError(error: unknown): string {
     normalized.includes('profiles_cpf_key')
   ) {
     return 'Este CPF ja esta cadastrado.';
+  }
+
+  if (normalized.includes('database error saving new user')) {
+    return 'Nao foi possivel criar conta no momento. Tente novamente sem CPF/telefone e depois complete no perfil.';
+  }
+
+  if (
+    normalized.includes('redirect') &&
+    normalized.includes('not allowed')
+  ) {
+    return 'Cadastro indisponivel por configuracao de confirmacao de email. Tente novamente em instantes.';
   }
 
   if (normalized.includes('invalid email')) {
@@ -61,6 +77,7 @@ export function RegisterPage() {
     setError('');
 
     const normalizedEmail = email.trim().toLowerCase();
+    const normalizedCpf = normalizeCpfInput(cpf);
 
     if (!name.trim() || !normalizedEmail || !password || !confirmPassword) {
       setError('Preencha todos os campos');
@@ -82,6 +99,11 @@ export function RegisterPage() {
       return;
     }
 
+    if (normalizedCpf && !CPF_DIGITS_REGEX.test(normalizedCpf)) {
+      setError('CPF invalido. Use 11 digitos.');
+      return;
+    }
+
     if (!acceptTerms) {
       setError('Voce deve aceitar os termos de uso');
       return;
@@ -93,7 +115,7 @@ export function RegisterPage() {
         name.trim(),
         normalizedEmail,
         password,
-        cpf.trim(),
+        normalizedCpf,
         phone.trim()
       );
 
@@ -172,9 +194,11 @@ export function RegisterPage() {
                   type="text"
                   placeholder="000.000.000-00"
                   value={cpf}
-                  onChange={(e) => setCpf(e.target.value)}
+                  onChange={(e) => setCpf(normalizeCpfInput(e.target.value))}
                   className="form-input"
                   autoComplete="off"
+                  inputMode="numeric"
+                  maxLength={11}
                 />
               </div>
             </div>
@@ -244,6 +268,8 @@ export function RegisterPage() {
               <label className="checkbox-label">
                 <input
                   type="checkbox"
+                  id="accept-terms"
+                  name="acceptTerms"
                   checked={acceptTerms}
                   onChange={(e) => setAcceptTerms(e.target.checked)}
                 />

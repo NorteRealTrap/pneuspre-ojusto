@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Loader, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 import { authService } from '../../services/supabase';
-import { buildApiUrl } from '../../services/apiBase';
 import './Auth.css';
 
 type AuthLocationState = {
@@ -56,41 +55,10 @@ export function LoginPage() {
   const [info, setInfo] = useState('');
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [resendingConfirmation, setResendingConfirmation] = useState(false);
-  const [bannerImage, setBannerImage] = useState('');
 
   const { login } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    let active = true;
-
-    const fetchLoginBanner = async () => {
-      try {
-        const response = await fetch(buildApiUrl('/public/login-banner'));
-
-        if (!response.ok) {
-          throw new Error('Nao foi possivel carregar o banner');
-        }
-
-        const data = (await response.json()) as { bannerImage?: string };
-
-        if (active) {
-          setBannerImage((data.bannerImage || '').trim());
-        }
-      } catch {
-        if (active) {
-          setBannerImage('');
-        }
-      }
-    };
-
-    void fetchLoginBanner();
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     const state = location.state as AuthLocationState;
@@ -111,8 +79,8 @@ export function LoginPage() {
       setInfo(state.info);
     }
 
-    navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate]);
+    navigate('/login', { replace: true, state: null });
+  }, [location.state, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,7 +140,7 @@ export function LoginPage() {
 
   return (
     <div className="auth-page login-page">
-      <div className="auth-container login-container">
+      <div className="auth-container login-container login-container-no-banner">
         <div className="auth-card login-card">
           <div className="auth-header">
             <h1>Bem-vindo de volta!</h1>
@@ -233,7 +201,7 @@ export function LoginPage() {
 
             <div className="form-footer">
               <label className="remember-me">
-                <input type="checkbox" />
+                <input type="checkbox" id="remember-me" name="remember" />
                 <span>Lembrar-me</span>
               </label>
               <Link to="/forgot-password" className="forgot-link">
@@ -289,17 +257,6 @@ export function LoginPage() {
           </div>
         </div>
 
-        <div className="auth-illustration login-banner-container">
-          <div className="login-banner-slot" aria-label="Banner do login">
-            {bannerImage && (
-              <img
-                src={bannerImage}
-                alt="Banner do login"
-                className="login-banner-image"
-              />
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

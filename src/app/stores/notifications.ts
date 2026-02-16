@@ -10,8 +10,10 @@ interface NotificationFlags {
 }
 
 interface NotificationsState {
+  ownerUserId: string | null;
   flags: NotificationFlags;
   notifiedShippedOrderIds: string[];
+  setOwnerUserId: (userId: string | null) => void;
   notifyCartAdded: (productLabel?: string) => void;
   notifyPurchaseCompleted: (orderId?: string) => void;
   notifyPaymentApproved: (orderId?: string, paymentMethodLabel?: string) => void;
@@ -28,11 +30,32 @@ const initialFlags: NotificationFlags = {
 
 const nowIso = () => new Date().toISOString();
 
+function normalizeOwnerUserId(userId?: string | null): string | null {
+  const normalized = String(userId || '').trim();
+  return normalized || null;
+}
+
 export const useNotificationsStore = create<NotificationsState>()(
   persist(
     (set, get) => ({
+      ownerUserId: null,
       flags: initialFlags,
       notifiedShippedOrderIds: [],
+
+      setOwnerUserId: (userId) => {
+        const nextOwnerUserId = normalizeOwnerUserId(userId);
+        set((state) => {
+          if (state.ownerUserId === nextOwnerUserId) {
+            return state;
+          }
+
+          return {
+            ownerUserId: nextOwnerUserId,
+            flags: initialFlags,
+            notifiedShippedOrderIds: [],
+          };
+        });
+      },
 
       notifyCartAdded: (productLabel) => {
         set((state) => ({
@@ -104,7 +127,27 @@ export const useNotificationsStore = create<NotificationsState>()(
     }),
     {
       name: 'notifications-storage',
+      version: 2,
+      migrate: (persistedState: any) => {
+        if (!persistedState || typeof persistedState !== 'object') {
+          return {
+            ownerUserId: null,
+            flags: initialFlags,
+            notifiedShippedOrderIds: [],
+          };
+        }
+
+        return {
+          ...persistedState,
+          ownerUserId: normalizeOwnerUserId(persistedState.ownerUserId),
+          flags: persistedState.flags || initialFlags,
+          notifiedShippedOrderIds: Array.isArray(persistedState.notifiedShippedOrderIds)
+            ? persistedState.notifiedShippedOrderIds
+            : [],
+        };
+      },
       partialize: (state) => ({
+        ownerUserId: state.ownerUserId,
         flags: state.flags,
         notifiedShippedOrderIds: state.notifiedShippedOrderIds,
       }),

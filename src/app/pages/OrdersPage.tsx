@@ -35,6 +35,11 @@ export function OrdersPage() {
         setLoading(true);
         const { data, error: ordersError } = await ordersService.getMyOrders();
         if (ordersError) {
+          const normalizedMessage = String(ordersError.message || '').toLowerCase();
+          if (normalizedMessage.includes('usuario nao autenticado')) {
+            navigate('/login', { replace: true });
+            return;
+          }
           throw ordersError;
         }
         const fetchedOrders = (data as Order[]) || [];
@@ -51,7 +56,7 @@ export function OrdersPage() {
     };
 
     fetchOrders();
-  }, [notifyOrderOnTheWay]);
+  }, [navigate, notifyOrderOnTheWay]);
 
   if (loading) {
     return (

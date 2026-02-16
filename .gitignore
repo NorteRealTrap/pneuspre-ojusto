@@ -18,6 +18,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+backend/.secure/
+.secure/
 
 # OS/editor
 .DS_Store

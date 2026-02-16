@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { productsService } from '../../services/supabase';
+import { sanitizeImageUrl } from '../utils/urlSafety';
 
 export interface Product {
   id: string;
@@ -90,6 +91,14 @@ const categoryAliases: Record<string, string> = {
   utilitarios: 'van',
   moto: 'moto',
   motos: 'moto',
+  agricola: 'agricola',
+  implemento: 'agricola',
+  otr: 'otr',
+  caminhao: 'caminhao',
+  caminhoes: 'caminhao',
+  onibus: 'onibus',
+  'caminhao/onibus': 'caminhao',
+  'onibus/caminhao': 'onibus',
 };
 
 const seasonAliases: Record<string, string> = {
@@ -157,9 +166,10 @@ function normalizeProduct(raw: Product): Product {
     price: Number(raw.price) || 0,
     old_price: raw.old_price ? Number(raw.old_price) : undefined,
     stock: Number(raw.stock) || 0,
-    image:
-      String(raw.image ?? '').trim() ||
-      'https://images.unsplash.com/photo-1606937933187-6f42b29de806?w=400&h=400&fit=crop',
+    image: sanitizeImageUrl(
+      String(raw.image ?? '').trim(),
+      'https://images.unsplash.com/photo-1606937933187-6f42b29de806?w=400&h=400&fit=crop'
+    ),
     features: normalizeStringArray(raw.features, (value) => value.trim()),
     category: normalizedCategory,
     season: normalizedSeason,
@@ -181,7 +191,12 @@ function normalizeProductInput(payload: Partial<ProductInput>) {
   if (payload.diameter !== undefined) normalized.diameter = String(payload.diameter).trim();
   if (payload.load_index !== undefined) normalized.load_index = String(payload.load_index).trim();
   if (payload.speed_rating !== undefined) normalized.speed_rating = String(payload.speed_rating).trim();
-  if (payload.image !== undefined) normalized.image = String(payload.image).trim();
+  if (payload.image !== undefined) {
+    normalized.image = sanitizeImageUrl(
+      String(payload.image).trim(),
+      'https://images.unsplash.com/photo-1606937933187-6f42b29de806?w=400&h=400&fit=crop'
+    );
+  }
   if (payload.description !== undefined) normalized.description = String(payload.description).trim();
   if (payload.price !== undefined) normalized.price = Number(payload.price);
   if (payload.old_price !== undefined) {

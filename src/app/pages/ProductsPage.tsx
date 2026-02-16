@@ -1,7 +1,157 @@
-import { useEffect } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { FormEvent, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Filter,
+  Search,
+  ShieldCheck,
+  ShoppingCart,
+  Truck,
+  X,
+} from 'lucide-react';
 import { useProductsStore } from '../stores/products';
+import type { Product } from '../stores/products';
 import { useCartStore } from '../stores/cart';
+import { useSiteConfigStore } from '../stores/siteConfig';
+import './ProductsPage.css';
+
+const PRODUCTS_PER_PAGE = 12;
+
+const SORT_OPTIONS = [
+  { value: 'relevance', label: 'Relevancia' },
+  { value: 'price-asc', label: 'Menor preco' },
+  { value: 'price-desc', label: 'Maior preco' },
+  { value: 'newest', label: 'Mais recentes' },
+  { value: 'stock-desc', label: 'Maior estoque' },
+] as const;
+
+const CATEGORY_LABELS: Record<string, string> = {
+  passeio: 'Passeio',
+  suv: 'SUV',
+  caminhonete: 'Caminhonete',
+  van: 'Van e Utilitario',
+  moto: 'Moto',
+  agricola: 'Agricola',
+  otr: 'OTR',
+  caminhao: 'Caminhao',
+  onibus: 'Onibus',
+};
+
+const BRAND_LOGOS: Record<string, string> = {
+  michelin: 'https://commons.wikimedia.org/wiki/Special:FilePath/Michelin_Wordmark.svg',
+  pirelli: 'https://commons.wikimedia.org/wiki/Special:FilePath/Pirelli%20-%20logo%20full%20%28Italy%2C%201997%29.svg',
+  goodyear: 'https://commons.wikimedia.org/wiki/Special:FilePath/Goodyear_logo.png',
+  continental: 'https://commons.wikimedia.org/wiki/Special:FilePath/Continental_logo.svg',
+  bridgestone: 'https://commons.wikimedia.org/wiki/Special:FilePath/Bridgestone_logo_full_color.svg',
+  yokohama: 'https://commons.wikimedia.org/wiki/Special:FilePath/Yokohama_Tire_new_logo.svg',
+};
+
+function parseCsvParam(value: string | null) {
+  if (!value) return [];
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function serializeCsvParam(values: string[]) {
+  return values.join(',');
+}
+
+function sortNumericText(a: string, b: string) {
+  const na = Number(a);
+  const nb = Number(b);
+  if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+  return a.localeCompare(b);
+}
+
+function getBrandLogoUrl(brand: string) {
+  return BRAND_LOGOS[brand.trim().toLowerCase()] || '';
+}
+
+function slugify(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function resolveBrandNames(tokens: string[], availableBrands: string[]) {
+  if (tokens.length === 0) return [];
+  const mapByNormalized = new Map(availableBrands.map((brand) => [brand.toLowerCase(), brand]));
+  const mapBySlug = new Map(availableBrands.map((brand) => [slugify(brand), brand]));
+  return Array.from(
+    new Set(
+      tokens.map((token) => {
+        const normalized = token.toLowerCase();
+        return mapByNormalized.get(normalized) || mapBySlug.get(slugify(token)) || token;
+      })
+    )
+  );
+}
+
+function buildRouteFilters(pathname: string) {
+  const routeFilters: {
+    category: string[];
+    brand: string[];
+    diameter: string[];
+    search: string;
+  } = {
+    category: [],
+    brand: [],
+    diameter: [],
+    search: '',
+  };
+
+  if (pathname === '/kit-de-pneus' || pathname === '/passageiros') {
+    routeFilters.search = 'kit';
+  } else if (pathname.startsWith('/caminhonete-e-suv/suv')) {
+    routeFilters.category = ['suv'];
+  } else if (pathname.startsWith('/caminhonete-e-suv/caminhonete')) {
+    routeFilters.category = ['caminhonete'];
+  } else if (pathname === '/van-e-utilitario') {
+    routeFilters.category = ['van'];
+  } else if (pathname === '/moto' || pathname.startsWith('/moto/')) {
+    routeFilters.category = ['moto'];
+  } else if (pathname === '/agricola-e-otr' || pathname.startsWith('/agricola-e-otr/')) {
+    if (pathname.endsWith('/otr')) {
+      routeFilters.category = ['otr'];
+    } else if (pathname.endsWith('/agricola')) {
+      routeFilters.category = ['agricola'];
+    } else {
+      routeFilters.category = ['agricola', 'otr'];
+    }
+  } else if (pathname === '/caminhao-e-onibus') {
+    routeFilters.category = ['caminhao', 'onibus'];
+  } else if (pathname === '/shampoo-automotivo') {
+    routeFilters.search = 'shampoo';
+  } else if (pathname === '/camaras-de-ar' || pathname.startsWith('/camaras-de-ar/')) {
+    routeFilters.search = 'camara';
+    const aroMatch = pathname.match(/aro-(\d+)/);
+    if (aroMatch) routeFilters.diameter = [aroMatch[1]];
+  } else if (pathname.startsWith('/marcas/')) {
+    const slug = pathname.split('/')[2];
+    if (slug) routeFilters.brand = [decodeURIComponent(slug)];
+  }
+
+  return routeFilters;
+}
+
+function getCatalogTitle(pathname: string, filters: { category: string[]; brand: string[]; search: string }) {
+  if (filters.brand.length > 0) return `Catalogo da marca ${filters.brand.join(', ')}`;
+  if (filters.category.length > 0) {
+    const first = filters.category[0];
+    return `Catalogo ${CATEGORY_LABELS[first] || first}`;
+  }
+  if (pathname === '/kit-de-pneus') return 'Kits de Pneus';
+  if (pathname.startsWith('/camaras-de-ar')) return 'Camaras de Ar';
+  if (filters.search) return `Resultados para "${filters.search}"`;
+  return 'Catalogo de Produtos';
+}
 
 export function ProductsPage() {
   const {
@@ -15,113 +165,167 @@ export function ProductsPage() {
     resetFilters,
   } = useProductsStore();
   const { addItem } = useCartStore();
+  const { config } = useSiteConfigStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const searchParamsString = searchParams.toString();
 
-  // Helper function to get route-based filters
-  const getRouteBasedFilters = () => {
-    const pathname = location.pathname;
-    const filters: Record<string, string | string[]> = {};
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
 
-    // Map routes to category filters
-    if (pathname === '/kit-de-pneus' || pathname === '/passageiros') {
-      filters.category = 'passeio';
-    } else if (pathname === '/caminhonete-e-suv') {
-      // No specific category - show all
-    } else if (pathname.startsWith('/caminhonete-e-suv/suv')) {
-      filters.category = 'suv';
-    } else if (pathname.startsWith('/caminhonete-e-suv/caminhonete')) {
-      filters.category = 'caminhonete';
-    } else if (pathname === '/moto' || pathname.startsWith('/moto/')) {
-      filters.category = 'moto';
-    } else if (pathname === '/agricola-e-otr') {
-      filters.category = 'agricola';
-    } else if (pathname === '/camaras-de-ar' || pathname.startsWith('/camaras-de-ar/')) {
-      // Extract aro number from route like /camaras-de-ar/aro-13
-      const aroMatch = pathname.match(/aro-(\d+)/);
-      if (aroMatch) {
-        filters.diameter = aroMatch[1];
-      }
-    } else if (pathname === '/marcas' || pathname.startsWith('/marcas/')) {
-      // Extract brand from route like /marcas/michelin
-      const brandMatch = pathname.match(/\/marcas\/(.+)/);
-      if (brandMatch) {
-        filters.brand = decodeURIComponent(brandMatch[1]);
-      }
-    }
-
-    return filters;
+  const catalogBanner = config.bannerImage || `${import.meta.env.BASE_URL}banner-meio.png`;
+  const catalogClassName = [
+    'tray-catalog-page',
+    `catalog-card-${config.productCardStyle}`,
+    `catalog-layout-${config.galleryLayout}`,
+    `catalog-content-${config.contentWidth}`,
+  ].join(' ');
+  const catalogThemeStyle: CSSProperties = {
+    ['--catalog-primary' as string]: config.primaryColor || '#009933',
+    ['--catalog-accent' as string]: config.accentColor || '#ffe500',
   };
+  const brands = useMemo(
+    () => Array.from(new Set(products.map((product) => product.brand))).sort((a, b) => a.localeCompare(b)),
+    [products]
+  );
+  const widths = useMemo(
+    () => Array.from(new Set(products.map((product) => product.width))).sort(sortNumericText),
+    [products]
+  );
+  const profiles = useMemo(
+    () => Array.from(new Set(products.map((product) => product.profile))).sort(sortNumericText),
+    [products]
+  );
+  const diameters = useMemo(
+    () => Array.from(new Set(products.map((product) => product.diameter))).sort(sortNumericText),
+    [products]
+  );
 
-  // Helper function to get page title from route
-  const getPageTitle = () => {
-    const pathname = location.pathname;
+  const categoryCounts = useMemo(() => {
+    const counters = new Map<string, number>();
+    products.forEach((product) => {
+      counters.set(product.category, (counters.get(product.category) || 0) + 1);
+    });
+    return counters;
+  }, [products]);
 
-    if (pathname === '/kit-de-pneus' || pathname === '/passageiros') return 'Pneus para Automoveis';
-    if (pathname === '/caminhonete-e-suv') return 'Pneus para Caminhonete e SUV';
-    if (pathname.includes('/suv')) return 'Pneus para SUV';
-    if (pathname.includes('/caminhonete')) return 'Pneus para Caminhonete';
-    if (pathname === '/moto' || pathname.includes('/moto')) return 'Pneus para Moto';
-    if (pathname === '/agricola-e-otr') return 'Pneus Agricola e OTR';
-    if (pathname === '/camaras-de-ar') return 'Camaras de Ar';
-    if (pathname.includes('/camaras-de-ar/aro-')) {
-      const aroMatch = pathname.match(/aro-(\d+)/);
-      if (aroMatch) return `Camaras de Ar - Aro ${aroMatch[1]}`;
-    }
-    if (pathname === '/marcas') return 'Todas as Marcas';
-    if (pathname.startsWith('/marcas/')) {
-      const brandMatch = pathname.match(/\/marcas\/(.+)/);
-      if (brandMatch) return `Pneus ${decodeURIComponent(brandMatch[1])}`;
-    }
-    if (pathname === '/produtos' || pathname === '/products') return 'Catalogo de Pneus';
+  const brandCounts = useMemo(() => {
+    const counters = new Map<string, number>();
+    products.forEach((product) => {
+      counters.set(product.brand, (counters.get(product.brand) || 0) + 1);
+    });
+    return counters;
+  }, [products]);
 
-    return 'Catalogo de Pneus';
-  };
+  const routeFilters = useMemo(() => buildRouteFilters(location.pathname), [location.pathname]);
+  const sortBy = searchParams.get('sort') || 'relevance';
+  const currentPage = Math.max(1, Number(searchParams.get('page') || '1'));
 
   useEffect(() => {
     void fetchProducts(true);
   }, [fetchProducts]);
 
   useEffect(() => {
-    const search = searchParams.get('search') || '';
-    const category = searchParams.get('category') || '';
-    const brand = searchParams.get('brand') || '';
-    const width = searchParams.get('width') || '';
-    const profile = searchParams.get('profile') || '';
-    const diameter = searchParams.get('diameter') || '';
-    const season = searchParams.get('season') || '';
+    const params = new URLSearchParams(searchParamsString);
+    const querySearch = params.get('search') || '';
+    const queryCategories = parseCsvParam(params.get('category'));
+    const queryBrands = parseCsvParam(params.get('brand'));
+    const queryWidths = parseCsvParam(params.get('width'));
+    const queryProfiles = parseCsvParam(params.get('profile'));
+    const queryDiameters = parseCsvParam(params.get('diameter'));
+    const querySeasons = parseCsvParam(params.get('season'));
 
-    // Get filters from route if no query params
-    const routeFilters = getRouteBasedFilters();
+    const resolvedBrands = resolveBrandNames(
+      queryBrands.length > 0 ? queryBrands : routeFilters.brand,
+      brands
+    );
 
     resetFilters();
     setFilters({
-      search,
-      category: category ? [category] : (typeof routeFilters.category === 'string' ? [routeFilters.category] : []),
-      brand: brand ? [brand] : (typeof routeFilters.brand === 'string' ? [routeFilters.brand] : []),
-      width: width ? [width] : [],
-      profile: profile ? [profile] : [],
-      diameter: diameter ? [diameter] : (typeof routeFilters.diameter === 'string' ? [routeFilters.diameter] : []),
-      season: season ? [season] : [],
+      search: querySearch || routeFilters.search,
+      category: queryCategories.length > 0 ? queryCategories : routeFilters.category,
+      brand: resolvedBrands,
+      width: queryWidths,
+      profile: queryProfiles,
+      diameter: queryDiameters.length > 0 ? queryDiameters : routeFilters.diameter,
+      season: querySeasons,
     });
-  }, [searchParamsString, location.pathname, resetFilters, setFilters]);
+    setSearchInput(querySearch || routeFilters.search);
+  }, [searchParamsString, routeFilters, brands, resetFilters, setFilters]);
 
-  const categories = [
-    { value: 'passeio', label: 'Passeio' },
-    { value: 'suv', label: 'SUV' },
-    { value: 'caminhonete', label: 'Caminhonete' },
-    { value: 'van', label: 'Van / Utilitário' },
-    { value: 'moto', label: 'Moto' },
-  ];
-  const brands = Array.from(new Set(products.map((product) => product.brand))).sort();
-
-  const handleAddToCart = (productId: string) => {
-    const product = filteredProducts.find((item) => item.id === productId);
-    if (product && product.stock > 0) {
-      addItem(product);
+  const sortedProducts = useMemo(() => {
+    const list = [...filteredProducts];
+    switch (sortBy) {
+      case 'price-asc':
+        list.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        list.sort((a, b) => b.price - a.price);
+        break;
+      case 'newest':
+        list.sort((a, b) => {
+          const ta = new Date(a.created_at).getTime();
+          const tb = new Date(b.created_at).getTime();
+          return tb - ta;
+        });
+        break;
+      case 'stock-desc':
+        list.sort((a, b) => b.stock - a.stock);
+        break;
+      default:
+        list.sort((a, b) => Number(b.featured) - Number(a.featured));
     }
+    return list;
+  }, [filteredProducts, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedProducts = useMemo(() => {
+    const from = (safePage - 1) * PRODUCTS_PER_PAGE;
+    return sortedProducts.slice(from, from + PRODUCTS_PER_PAGE);
+  }, [sortedProducts, safePage]);
+
+  useEffect(() => {
+    if (safePage === currentPage) return;
+    const params = new URLSearchParams(searchParamsString);
+    params.set('page', String(safePage));
+    navigate(`/products?${params.toString()}`, { replace: true });
+  }, [safePage, currentPage, searchParamsString, navigate]);
+
+  const updateParam = (key: string, value: string | null) => {
+    const params = new URLSearchParams(searchParams);
+    if (!value) params.delete(key);
+    else params.set(key, value);
+    if (key !== 'page') params.delete('page');
+    navigate(`/products${params.toString() ? `?${params.toString()}` : ''}`);
+  };
+
+  const toggleCsvParam = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams);
+    const list = parseCsvParam(params.get(key));
+    const exists = list.includes(value);
+    const updated = exists ? list.filter((item) => item !== value) : [...list, value];
+    if (updated.length === 0) params.delete(key);
+    else params.set(key, serializeCsvParam(updated));
+    params.delete('page');
+    navigate(`/products${params.toString() ? `?${params.toString()}` : ''}`);
+  };
+
+  const clearFilters = () => {
+    navigate('/products');
+    setIsMobileFiltersOpen(false);
+  };
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    updateParam('search', searchInput.trim() || null);
+    setIsMobileFiltersOpen(false);
+  };
+
+  const handleAddToCart = (product: Product) => {
+    if (product.stock <= 0) return;
+    addItem(product);
   };
 
   const hasFilters =
@@ -133,185 +337,410 @@ export function ProductsPage() {
     filters.diameter.length > 0 ||
     filters.season.length > 0;
 
-  const clearFilters = () => {
-    navigate('/products');
-  };
+  const pageNumbers = useMemo(() => {
+    const start = Math.max(1, safePage - 2);
+    const end = Math.min(totalPages, safePage + 2);
+    const pages: number[] = [];
+    for (let page = start; page <= end; page += 1) pages.push(page);
+    return pages;
+  }, [safePage, totalPages]);
+
+  const catalogTitle = getCatalogTitle(location.pathname, {
+    category: filters.category,
+    brand: filters.brand,
+    search: filters.search,
+  });
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">{getPageTitle()}</h1>
+    <div className={catalogClassName} style={catalogThemeStyle}>
+      <section className="tray-catalog-banner">
+        <img
+          src={catalogBanner}
+          alt="Banner do catalogo"
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.style.display = 'none';
+          }}
+        />
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-        <div className="md:col-span-1">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="font-bold mb-4">Filtros</h3>
+      <section className="tray-breadcrumbs">
+        <div className="container tray-breadcrumbs-inner">
+          <ol aria-label="Breadcrumb">
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+            <li>
+              <Link to="/products">Catalogo</Link>
+            </li>
+            <li>{catalogTitle}</li>
+          </ol>
+          <div className="tray-breadcrumbs-info">{sortedProducts.length} produtos encontrados</div>
+        </div>
+      </section>
 
-            <div className="mb-6">
-              <label className="block font-semibold mb-2">Categoria</label>
-              <select
-                value={filters.category[0] || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const params = new URLSearchParams(searchParams);
-                  if (value) params.set('category', value);
-                  else params.delete('category');
-                  navigate(`/products${params.toString() ? `?${params.toString()}` : ''}`);
-                }}
-                className="w-full px-3 py-2 border rounded"
-              >
-                <option value="">Todas</option>
-                {categories.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <div
+        className={`tray-catalog-overlay ${isMobileFiltersOpen ? 'is-open' : ''}`}
+        onClick={() => setIsMobileFiltersOpen(false)}
+        aria-hidden="true"
+      />
 
-            <div className="mb-6">
-              <label className="block font-semibold mb-2">Marca</label>
-              <select
-                value={filters.brand[0] || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const params = new URLSearchParams(searchParams);
-                  if (value) params.set('brand', value);
-                  else params.delete('brand');
-                  navigate(`/products${params.toString() ? `?${params.toString()}` : ''}`);
-                }}
-                className="w-full px-3 py-2 border rounded"
-              >
-                <option value="">Todas</option>
-                {brands.map((brand) => (
-                  <option key={brand} value={brand}>
-                    {brand}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <section className="container tray-catalog-content">
+        <header className="tray-catalog-headline">
+          <h1>{catalogTitle}</h1>
+          <p>Selecione medidas, categorias e marcas para encontrar o pneu ideal para sua loja.</p>
+        </header>
 
-            <div className="mb-6">
-              <label className="block font-semibold mb-2">Busca</label>
-              <input
-                value={filters.search}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const params = new URLSearchParams(searchParams);
-                  if (value.trim()) params.set('search', value);
-                  else params.delete('search');
-                  navigate(`/products${params.toString() ? `?${params.toString()}` : ''}`);
-                }}
-                placeholder="Marca, modelo ou medida"
-                className="w-full px-3 py-2 border rounded"
-              />
-            </div>
-
-            <button
-              onClick={clearFilters}
-              className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded hover:bg-gray-300"
+        <div className="tray-catalog-mobile-actions">
+          <button type="button" onClick={() => setIsMobileFiltersOpen(true)}>
+            <Filter size={15} />
+            Filtros
+          </button>
+          <label htmlFor="catalog-sort-mobile">
+            Ordenar:
+            <select
+              id="catalog-sort-mobile"
+              value={sortBy}
+              onChange={(event) => updateParam('sort', event.target.value)}
             >
-              Limpar Filtros
-            </button>
-          </div>
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        <div className="md:col-span-3">
-          {loading ? (
-            <div className="text-center py-8">Carregando produtos...</div>
-          ) : error ? (
-            <div className="bg-red-100 text-red-800 p-4 rounded">
-              <p>{error}</p>
-              <button
-                className="mt-3 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
-                onClick={() => void fetchProducts(true)}
+        <aside className={`tray-catalog-sidebar ${isMobileFiltersOpen ? 'is-open' : ''}`}>
+          <div className="tray-sidebar-header">
+            <strong>Filtros</strong>
+            <button type="button" aria-label="Fechar filtros" onClick={() => setIsMobileFiltersOpen(false)}>
+              <X size={18} />
+            </button>
+          </div>
+
+          <form className="tray-sidebar-search" onSubmit={handleSearchSubmit}>
+            <label htmlFor="catalog-search-input">Busca rapida</label>
+            <div className="tray-sidebar-search-control">
+              <input
+                id="catalog-search-input"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Marca, modelo ou medida"
+              />
+              <button type="submit" aria-label="Buscar no catalogo">
+                <Search size={14} />
+              </button>
+            </div>
+          </form>
+
+          <div className="tray-sidebar-group">
+            <h4>Categorias</h4>
+            <ul>
+              {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                <li key={`cat-${value}`}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={filters.category.includes(value)}
+                      onChange={() => toggleCsvParam('category', value)}
+                    />
+                    <span>{label}</span>
+                    <em>{categoryCounts.get(value) || 0}</em>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="tray-sidebar-group">
+            <h4>Marcas</h4>
+            <ul>
+              {brands.map((brand) => {
+                const brandLogo = getBrandLogoUrl(brand);
+
+                return (
+                  <li key={`brand-${brand}`}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={filters.brand.includes(brand)}
+                        onChange={() => toggleCsvParam('brand', brand)}
+                      />
+                      <span className="tray-brand-filter-item">
+                        {brandLogo ? (
+                          <img
+                            src={brandLogo}
+                            alt={`Logo ${brand}`}
+                            className="tray-brand-filter-logo"
+                            loading="lazy"
+                            onError={(event) => {
+                              event.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                        <span className="tray-brand-filter-name">{brand}</span>
+                      </span>
+                      <em>{brandCounts.get(brand) || 0}</em>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          <div className="tray-sidebar-group">
+            <h4>Largura</h4>
+            <ul>
+              {widths.map((width) => (
+                <li key={`width-${width}`}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={filters.width.includes(width)}
+                      onChange={() => toggleCsvParam('width', width)}
+                    />
+                    <span>{width}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="tray-sidebar-group">
+            <h4>Perfil</h4>
+            <ul>
+              {profiles.map((profile) => (
+                <li key={`profile-${profile}`}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={filters.profile.includes(profile)}
+                      onChange={() => toggleCsvParam('profile', profile)}
+                    />
+                    <span>{profile}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="tray-sidebar-group">
+            <h4>Aro</h4>
+            <ul>
+              {diameters.map((diameter) => (
+                <li key={`diameter-${diameter}`}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={filters.diameter.includes(diameter)}
+                      onChange={() => toggleCsvParam('diameter', diameter)}
+                    />
+                    <span>Aro {diameter}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="tray-sidebar-actions">
+            <button type="button" onClick={() => setIsMobileFiltersOpen(false)}>
+              Aplicar
+            </button>
+            <button type="button" className="secondary" onClick={clearFilters}>
+              Limpar
+            </button>
+          </div>
+        </aside>
+
+        <main className="tray-catalog-main">
+          <div className="tray-catalog-toolbar">
+            <span>
+              Mostrando {paginatedProducts.length} de {sortedProducts.length} produtos
+            </span>
+            <label htmlFor="catalog-sort-desktop">
+              Ordenar:
+              <select
+                id="catalog-sort-desktop"
+                value={sortBy}
+                onChange={(event) => updateParam('sort', event.target.value)}
               >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {loading ? (
+            <div className="tray-state-card">
+              <p>Carregando catalogo...</p>
+            </div>
+          ) : error ? (
+            <div className="tray-state-card error">
+              <p>{error}</p>
+              <button type="button" onClick={() => void fetchProducts(true)}>
                 Tentar novamente
               </button>
             </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="text-center py-8">
-              <p>Nenhum produto encontrado</p>
-              {hasFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="mt-4 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-                >
+          ) : paginatedProducts.length === 0 ? (
+            <div className="tray-state-card">
+              <p>Nenhum produto encontrado para os filtros selecionados.</p>
+              {hasFilters ? (
+                <button type="button" onClick={clearFilters}>
                   Ver catalogo completo
                 </button>
-              )}
+              ) : null}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
-                <article
-                  key={product.id}
-                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-                  aria-label={`${product.brand} ${product.model}`}
-                >
-                  <a href={`/product/${product.id}`} onClick={(e) => { e.preventDefault(); navigate(`/product/${product.id}`); }}>
-                    <img
-                      src={product.image}
-                      alt={`${product.brand} ${product.model}`}
-                      className="w-full h-48 object-cover cursor-pointer"
-                      loading="lazy"
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = `${import.meta.env.BASE_URL}logo.png`; }}
-                    />
-                  </a>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-lg">
-                      {product.brand} {product.model}
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      {product.width}/{product.profile} R{product.diameter}
-                    </p>
+            <>
+              <ul className="tray-catalog-grid">
+                {paginatedProducts.map((product) => {
+                  const installmentValue = product.price / 12;
+                  const pixValue = product.price * 0.88;
+                  const isHot = product.stock > 0 && product.stock <= 5;
 
-                    <div className="mt-2 flex items-center justify-between">
-                      <div>
-                        <span className="text-2xl font-bold text-green-600">
-                          {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>
-                        {product.old_price && (
-                          <span className="ml-2 text-sm text-gray-500 line-through">
-                            {product.old_price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </span>
-                        )}
+                  return (
+                    <li key={product.id} className="tray-product-card">
+                      <div className="tray-product-tags">
+                        {product.featured ? <span className="tag-hot">Destaque</span> : null}
+                        {isHot ? <span className="tag-new">Ultimas unidades</span> : null}
                       </div>
-                      <span
-                        className={`px-2 py-1 text-xs rounded ${
-                          product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}
+
+                      <button
+                        type="button"
+                        className="tray-product-image"
+                        onClick={() => navigate(`/product/${product.id}`)}
                       >
-                        {product.stock > 0 ? `${product.stock} em estoque` : 'Esgotado'}
-                      </span>
-                    </div>
+                        <img
+                          src={product.image}
+                          alt={`${product.brand} ${product.model}`}
+                          loading="lazy"
+                          onError={(event) => {
+                            event.currentTarget.src = `${import.meta.env.BASE_URL}logo.png`;
+                          }}
+                        />
+                        <span>Ver detalhes</span>
+                      </button>
 
-                    {product.features && product.features.length > 0 && (
-                      <div className="mt-3">
-                        <p className="text-xs font-semibold mb-1">Caracteristicas:</p>
-                        <ul className="text-xs text-gray-600">
-                          {product.features.slice(0, 3).map((feature, idx) => (
-                            <li key={idx}>- {feature}</li>
-                          ))}
-                        </ul>
+                      <div className="tray-product-tech-seals">
+                        <span>Aro {product.diameter}</span>
+                        {product.runflat ? <span>Runflat</span> : null}
+                        {product.speed_rating ? <span>Indice {product.speed_rating}</span> : null}
                       </div>
-                    )}
 
-                    <button
-                      onClick={() => handleAddToCart(product.id)}
-                      disabled={product.stock === 0}
-                      aria-disabled={product.stock === 0}
-                      aria-label={product.stock > 0 ? `Adicionar ${product.brand} ${product.model} ao carrinho` : `${product.brand} ${product.model} esgotado`}
-                      className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {product.stock > 0 ? 'Adicionar ao Carrinho' : 'Esgotado'}
-                    </button>
+                      <div className="tray-product-info">
+                        <h3>{`${product.brand} ${product.model}`}</h3>
+
+                        <div className="tray-product-price">
+                          <strong>
+                            {product.price.toLocaleString('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            })}
+                          </strong>
+                          {product.old_price && product.old_price > product.price ? (
+                            <small>
+                              de{' '}
+                              {product.old_price.toLocaleString('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              })}
+                            </small>
+                          ) : null}
+                          <p>
+                            a vista no PIX:{' '}
+                            <span>
+                              {pixValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </span>
+                          </p>
+                          <p>
+                            ou em 12x de{' '}
+                            <span>
+                              {installmentValue.toLocaleString('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              })}
+                            </span>
+                          </p>
+                        </div>
+
+                        <div className="tray-product-seals">
+                          <span>
+                            <ShieldCheck size={12} />
+                            Compra segura
+                          </span>
+                          <span>
+                            <Truck size={12} />
+                            Entrega garantida
+                          </span>
+                        </div>
+
+                        <div className="tray-product-actions">
+                          <button
+                            type="button"
+                            className="detail"
+                            onClick={() => navigate(`/product/${product.id}`)}
+                          >
+                            <Eye size={13} />
+                            Detalhes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddToCart(product)}
+                            disabled={product.stock <= 0}
+                          >
+                            <ShoppingCart size={13} />
+                            {product.stock > 0 ? 'Comprar' : 'Esgotado'}
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {totalPages > 1 ? (
+                <div className="tray-pagination">
+                  <button
+                    type="button"
+                    onClick={() => updateParam('page', String(Math.max(1, safePage - 1)))}
+                    disabled={safePage <= 1}
+                  >
+                    <ChevronLeft size={14} />
+                    Anterior
+                  </button>
+
+                  <div className="tray-pagination-pages">
+                    {pageNumbers.map((page) => (
+                      <button
+                        type="button"
+                        key={`page-${page}`}
+                        className={page === safePage ? 'is-active' : ''}
+                        onClick={() => updateParam('page', String(page))}
+                      >
+                        {page}
+                      </button>
+                    ))}
                   </div>
-                </article>
-              ))}
-            </div>
+
+                  <button
+                    type="button"
+                    onClick={() => updateParam('page', String(Math.min(totalPages, safePage + 1)))}
+                    disabled={safePage >= totalPages}
+                  >
+                    Proxima
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              ) : null}
+            </>
           )}
-        </div>
-      </div>
+        </main>
+      </section>
     </div>
   );
 }

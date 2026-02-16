@@ -20,10 +20,12 @@ import { InfoPage } from './pages/InfoPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { useAuthStore } from './stores/auth';
+import { useSiteConfigStore } from './stores/siteConfig';
 import { authService } from '../services/supabase';
 
 export default function App() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
+  const loadConfig = useSiteConfigStore((state) => state.loadConfig);
 
   useEffect(() => {
     checkAuth();
@@ -39,6 +41,10 @@ export default function App() {
     };
   }, [checkAuth]);
 
+  useEffect(() => {
+    void loadConfig();
+  }, [loadConfig]);
+
   return (
     <Router>
       <div className="app-container">
@@ -48,7 +54,7 @@ export default function App() {
             <Route path="/" element={<HomePage />} />
 
             <Route path="/products" element={<ProductsPage />} />
-            <Route path="/produtos" element={<Navigate to="/products" replace />} />
+            <Route path="/produtos" element={<LegacyRouteRedirect />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
 
             <Route path="/marcas" element={<Navigate to="/products" replace />} />
@@ -60,7 +66,7 @@ export default function App() {
             <Route path="/caminhonete-e-suv/*" element={<LegacyRouteRedirect />} />
             <Route path="/van-e-utilitario" element={<Navigate to="/products?category=van" replace />} />
             <Route path="/moto/*" element={<LegacyRouteRedirect />} />
-            <Route path="/caminhao-e-onibus" element={<Navigate to="/products?search=caminhao" replace />} />
+            <Route path="/caminhao-e-onibus" element={<Navigate to="/products?category=caminhao,onibus" replace />} />
             <Route path="/agricola-e-otr/*" element={<LegacyRouteRedirect />} />
             <Route path="/shampoo-automotivo" element={<Navigate to="/products?search=shampoo" replace />} />
             <Route path="/camaras-de-ar/*" element={<LegacyRouteRedirect />} />
@@ -167,7 +173,7 @@ export default function App() {
               element={
                 <InfoPage
                   title="Quem Somos"
-                  description="A PneuGreen e especializada em pneus para carro, SUV, caminhonete, moto e linha pesada com atendimento consultivo e entrega para todo o Brasil."
+                  description="A Pneus PrecoJusto e especializada em pneus para carro, SUV, caminhonete, moto e linha pesada com atendimento consultivo e entrega para todo o Brasil."
                 />
               }
             />

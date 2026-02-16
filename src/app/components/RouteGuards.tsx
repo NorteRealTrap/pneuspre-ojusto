@@ -6,11 +6,36 @@ interface GuardProps {
   children: ReactNode;
 }
 
+function GuardLoadingState({ message }: { message: string }) {
+  return (
+    <div
+      style={{
+        minHeight: '40vh',
+        display: 'grid',
+        placeItems: 'center',
+        padding: '2rem 1rem',
+      }}
+      aria-live="polite"
+    >
+      <p
+        style={{
+          margin: 0,
+          fontSize: '0.95rem',
+          color: '#4b5563',
+          textAlign: 'center',
+        }}
+      >
+        {message}
+      </p>
+    </div>
+  );
+}
+
 export function RequireAuth({ children }: GuardProps) {
   const { isAuthenticated, loading } = useAuthStore();
 
   if (loading) {
-    return null;
+    return <GuardLoadingState message="Carregando sua sessao..." />;
   }
 
   if (!isAuthenticated) {
@@ -24,7 +49,7 @@ export function RequireAdmin({ children }: GuardProps) {
   const { isAuthenticated, loading, profile } = useAuthStore();
 
   if (loading) {
-    return null;
+    return <GuardLoadingState message="Validando acesso ao painel..." />;
   }
 
   if (!isAuthenticated) {
@@ -42,7 +67,7 @@ export function RequireGuest({ children }: GuardProps) {
   const { isAuthenticated, loading, profile } = useAuthStore();
 
   if (loading) {
-    return null;
+    return <>{children}</>;
   }
 
   if (isAuthenticated) {
