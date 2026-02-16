@@ -31,3 +31,9 @@ Thumbs.db
 .snapshots/
 patch.debug
 patch.diff
+
+# local temp artifacts
+tmp-*.png
+tmp_*.html
+.tmp_checkout_design_extract/
+supabase/.temp/
