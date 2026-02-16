@@ -384,7 +384,8 @@ export function DashboardPage() {
   };
 
   const toggleShowcaseProduct = (showcase: 'topSellerProductIds' | 'highlightProductIds', productId: string) => {
-    const currentIds = siteConfig[showcase] || [];
+    const currentConfig = useSiteConfigStore.getState().config;
+    const currentIds = currentConfig[showcase] || [];
     const exists = currentIds.includes(productId);
     const nextIds = exists ? currentIds.filter((id) => id !== productId) : [...currentIds, productId];
     void persistShowcaseConfig({ [showcase]: nextIds } as Partial<SiteConfig>);

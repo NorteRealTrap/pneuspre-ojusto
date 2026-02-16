@@ -109,7 +109,7 @@ const buildShowcaseSections = (
 export function HomePage() {
   const navigate = useNavigate();
   const { addItem } = useCartStore();
-  const { config } = useSiteConfigStore();
+  const { config, loadConfig } = useSiteConfigStore();
   const { products, loading, error, fetchProducts } = useProductsStore();
 
   const [width, setWidth] = useState('');
@@ -136,6 +136,10 @@ export function HomePage() {
   useEffect(() => {
     void fetchProducts(true);
   }, [fetchProducts]);
+
+  useEffect(() => {
+    void loadConfig();
+  }, [loadConfig]);
 
   const widths = useMemo(
     () =>

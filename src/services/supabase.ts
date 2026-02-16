@@ -75,6 +75,7 @@ async function requestAdminApi(path: string, init: RequestInit = {}) {
       ...init,
       headers,
     });
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
     const payload = await readApiResponse(response);
 
     if (!response.ok) {
@@ -89,7 +90,35 @@ async function requestAdminApi(path: string, init: RequestInit = {}) {
       };
     }
 
-    return { data: payload?.data ?? payload ?? null, error: null };
+    // Admin API must always return JSON. If VITE_API_URL is misconfigured and
+    // points to a static frontend route, Vercel can answer HTML with 200.
+    // Treat this as an error so callers can safely fallback to Supabase.
+    if (!contentType.includes('application/json')) {
+      return {
+        data: null,
+        error: {
+          message:
+            'Resposta invalida da API administrativa (esperado JSON). Verifique VITE_API_URL/backend.',
+        },
+      };
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      return {
+        data: null,
+        error: { message: 'Resposta vazia ou invalida da API administrativa.' },
+      };
+    }
+
+    const payloadObject = payload as Record<string, unknown>;
+    if (typeof payloadObject.error === 'string' && payloadObject.error.trim()) {
+      return {
+        data: null,
+        error: { message: payloadObject.error },
+      };
+    }
+
+    return { data: payloadObject.data ?? payloadObject, error: null };
   } catch (error: any) {
     return {
       data: null,
